@@ -10,6 +10,26 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
 from .const import CONF_APPDAEMON_PATH, DEFAULT_APPDAEMON_PATH, DOMAIN, LOGGER, APPDAEMON_PATH_CANDIDATES
 
+# Allowed parent directories for the AppDaemon config path
+_ALLOWED_PATH_PREFIXES = (
+    "/config/",
+    "/addon_configs/",
+    "/homeassistant/",
+    "/share/",
+)
+
+
+def _is_safe_appdaemon_path(path_str: str) -> bool:
+    """Check that a path resolves within allowed directories."""
+    try:
+        resolved = Path(path_str).resolve()
+    except (OSError, ValueError):
+        return False
+    return any(
+        str(resolved).startswith(prefix.rstrip("/"))
+        for prefix in _ALLOWED_PATH_PREFIXES
+    )
+
 
 class NsPanelLovelaceEditorConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for NSPanel Lovelace Editor."""
@@ -29,24 +49,32 @@ class NsPanelLovelaceEditorConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             appdaemon_path = user_input[CONF_APPDAEMON_PATH]
 
-            # Validate the path exists (check in executor to avoid blocking)
-            path_exists = await self.hass.async_add_executor_job(
-                Path(appdaemon_path).is_file
-            )
-
-            if not path_exists:
+            # Validate path is within allowed directories
+            if appdaemon_path and not _is_safe_appdaemon_path(appdaemon_path):
+                errors[CONF_APPDAEMON_PATH] = "path_not_allowed"
                 LOGGER.warning(
-                    "AppDaemon apps.yaml not found at %s — "
-                    "YAML import/export will be unavailable until the path is "
-                    "corrected. You can still use paste-based import and the "
-                    "visual editor.",
+                    "Rejected AppDaemon path outside allowed directories: %s",
                     appdaemon_path,
                 )
+            else:
+                # Validate the path exists (check in executor to avoid blocking)
+                path_exists = await self.hass.async_add_executor_job(
+                    Path(appdaemon_path).is_file
+                )
 
-            return self.async_create_entry(
-                title=DOMAIN,
-                data={CONF_APPDAEMON_PATH: appdaemon_path},
-            )
+                if not path_exists:
+                    LOGGER.warning(
+                        "AppDaemon apps.yaml not found at %s — "
+                        "YAML import/export will be unavailable until the path is "
+                        "corrected. You can still use paste-based import and the "
+                        "visual editor.",
+                        appdaemon_path,
+                    )
+
+                return self.async_create_entry(
+                    title=DOMAIN,
+                    data={CONF_APPDAEMON_PATH: appdaemon_path},
+                )
 
         # Try to auto-detect AppDaemon path across deployment modes
         default_path = DEFAULT_APPDAEMON_PATH

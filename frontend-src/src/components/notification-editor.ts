@@ -154,13 +154,7 @@ export class NspNotificationEditor extends LitElement {
     try {
       await navigator.clipboard.writeText(yaml);
     } catch {
-      // Fallback for browsers that don't support the Clipboard API (legacy)
-      const ta = document.createElement("textarea");
-      ta.value = yaml;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
+      // Clipboard API unavailable — ignore silently
     }
     this._copied = true;
     setTimeout(() => {

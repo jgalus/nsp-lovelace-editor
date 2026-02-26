@@ -13,6 +13,26 @@ from .const import LOGGER
 NSPANEL_MODULE = "nspanel-lovelace-ui"
 NSPANEL_CLASS = "NsPanelLovelaceUIManager"
 
+# Allowed parent directories for file I/O operations
+_ALLOWED_PATH_PREFIXES = (
+    "/config/",
+    "/addon_configs/",
+    "/homeassistant/",
+    "/share/",
+)
+
+
+def _validate_path_safety(file_path: str) -> None:
+    """Ensure file_path resolves within allowed directories."""
+    resolved = str(Path(file_path).resolve())
+    if not any(
+        resolved.startswith(prefix.rstrip("/"))
+        for prefix in _ALLOWED_PATH_PREFIXES
+    ):
+        raise PermissionError(
+            f"Path {file_path} is outside allowed directories"
+        )
+
 
 class YamlWriteError(Exception):
     """Base exception for YAML write failures."""
@@ -31,6 +51,7 @@ def parse_appdaemon_yaml(file_path: str) -> dict[str, Any]:
 
     Returns a dict of panel_id -> config for NSPanel Lovelace UI entries.
     """
+    _validate_path_safety(file_path)
     path = Path(file_path)
     if not path.is_file():
         raise FileNotFoundError(f"apps.yaml not found at {file_path}")
@@ -87,7 +108,8 @@ def export_to_appdaemon_yaml(
 
     # Load existing data to preserve non-NSPanel entries
     existing_data: dict[str, Any] = {}
-    if path.is_file():
+    if file_path and path.is_file():
+        _validate_path_safety(file_path)
         with open(path, encoding="utf-8") as f:
             existing_data = yaml.safe_load(f) or {}
 
@@ -136,6 +158,7 @@ def write_appdaemon_yaml(file_path: str, panels: dict[str, Any]) -> None:
         YamlVerificationError: If the written file fails read-back verification.
         OSError: For other I/O failures (disk full, etc.).
     """
+    _validate_path_safety(file_path)
     path = Path(file_path)
 
     # Pre-write permission checks
@@ -150,6 +173,7 @@ def write_appdaemon_yaml(file_path: str, panels: dict[str, Any]) -> None:
             dir=str(parent), prefix=".apps_yaml_", suffix=".tmp"
         )
         try:
+            os.fchmod(fd, 0o644)
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(yaml_str)
                 f.flush()
@@ -182,6 +206,7 @@ def check_yaml_path(file_path: str) -> dict[str, Any]:
 
     Returns a dict with keys: exists, readable, writable, parent_writable, error.
     """
+    _validate_path_safety(file_path)
     path = Path(file_path)
     result: dict[str, Any] = {
         "path": file_path,

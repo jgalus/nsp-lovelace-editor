@@ -9,6 +9,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
 from .const import CONF_APPDAEMON_PATH, DOMAIN, LOGGER
+from .schema import validate_panel
 from .storage import NsPanelStorage
 from .yaml_io import (
     YamlPermissionError,
@@ -20,6 +21,9 @@ from .yaml_io import (
     parse_yaml_string,
     write_appdaemon_yaml,
 )
+
+# panel_id must be a safe identifier: alphanumeric, hyphens, underscores, 1-64 chars
+PANEL_ID = vol.All(str, vol.Match(r"^[a-zA-Z0-9_-]{1,64}$"))
 
 
 def async_register_websocket_commands(hass: HomeAssistant) -> None:
@@ -45,6 +49,7 @@ def _get_appdaemon_path(hass: HomeAssistant) -> str:
     return hass.data[DOMAIN].get("appdaemon_path", "")
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {vol.Required("type"): "nspanel_editor/list_panels"}
 )
@@ -70,10 +75,11 @@ async def ws_list_panels(
     connection.send_result(msg["id"], {"panels": result})
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "nspanel_editor/get_panel",
-        vol.Required("panel_id"): str,
+        vol.Required("panel_id"): PANEL_ID,
     }
 )
 @websocket_api.async_response
@@ -91,10 +97,11 @@ async def ws_get_panel(
     connection.send_result(msg["id"], {"panel_id": msg["panel_id"], **panel})
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "nspanel_editor/save_panel",
-        vol.Required("panel_id"): str,
+        vol.Required("panel_id"): PANEL_ID,
         vol.Required("config"): dict,
         vol.Optional("cards"): list,
         vol.Optional("hiddenCards"): list,
@@ -115,14 +122,23 @@ async def ws_save_panel(
         "hiddenCards": msg.get("hiddenCards", []),
         "screensaver": msg.get("screensaver", {}),
     }
+    errors = validate_panel(panel_data)
+    if errors:
+        connection.send_error(
+            msg["id"],
+            "validation_error",
+            f"Invalid panel config: {'; '.join(errors)}",
+        )
+        return
     await storage.async_save_panel(msg["panel_id"], panel_data)
     connection.send_result(msg["id"], {"success": True})
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "nspanel_editor/delete_panel",
-        vol.Required("panel_id"): str,
+        vol.Required("panel_id"): PANEL_ID,
     }
 )
 @websocket_api.async_response
@@ -140,6 +156,7 @@ async def ws_delete_panel(
     connection.send_result(msg["id"], {"success": True})
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {vol.Required("type"): "nspanel_editor/import_yaml"}
 )
@@ -160,11 +177,12 @@ async def ws_import_yaml(
             parse_appdaemon_yaml, appdaemon_path
         )
     except FileNotFoundError as err:
-        connection.send_error(msg["id"], "file_not_found", str(err))
+        LOGGER.warning("apps.yaml not found: %s", err)
+        connection.send_error(msg["id"], "file_not_found", "apps.yaml not found at configured path")
         return
     except Exception as err:
         LOGGER.exception("Failed to parse apps.yaml")
-        connection.send_error(msg["id"], "parse_error", str(err))
+        connection.send_error(msg["id"], "parse_error", "Failed to parse apps.yaml")
         return
 
     storage = _get_storage(hass)
@@ -177,6 +195,7 @@ async def ws_import_yaml(
     )
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {vol.Required("type"): "nspanel_editor/export_yaml"}
 )
@@ -204,7 +223,8 @@ async def ws_export_yaml(
         connection.send_error(
             msg["id"],
             "permission_denied",
-            str(err),
+            "Permission denied writing to apps.yaml. "
+            "Ensure the Home Assistant process has write access.",
         )
         return
     except YamlVerificationError as err:
@@ -212,7 +232,7 @@ async def ws_export_yaml(
         connection.send_error(
             msg["id"],
             "verification_failed",
-            str(err),
+            "Written file failed verification. Check disk space and file integrity.",
         )
         return
     except OSError as err:
@@ -220,12 +240,12 @@ async def ws_export_yaml(
         connection.send_error(
             msg["id"],
             "io_error",
-            f"I/O error writing to {appdaemon_path}: {err}",
+            "I/O error writing to apps.yaml",
         )
         return
     except Exception as err:
         LOGGER.exception("Failed to write apps.yaml")
-        connection.send_error(msg["id"], "write_error", str(err))
+        connection.send_error(msg["id"], "write_error", "Failed to write apps.yaml")
         return
 
     connection.send_result(
@@ -234,6 +254,7 @@ async def ws_export_yaml(
     )
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {vol.Required("type"): "nspanel_editor/preview_yaml"}
 )
@@ -254,16 +275,17 @@ async def ws_preview_yaml(
         )
     except Exception as err:
         LOGGER.exception("Failed to generate YAML preview")
-        connection.send_error(msg["id"], "preview_error", str(err))
+        connection.send_error(msg["id"], "preview_error", "Failed to generate YAML preview")
         return
 
     connection.send_result(msg["id"], {"yaml": yaml_str})
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "nspanel_editor/import_yaml_text",
-        vol.Required("yaml_text"): str,
+        vol.Required("yaml_text"): vol.All(str, vol.Length(max=1_048_576)),
     }
 )
 @websocket_api.async_response
@@ -283,7 +305,7 @@ async def ws_import_yaml_text(
         )
     except Exception as err:
         LOGGER.exception("Failed to parse pasted YAML")
-        connection.send_error(msg["id"], "parse_error", str(err))
+        connection.send_error(msg["id"], "parse_error", "Failed to parse pasted YAML")
         return
 
     if not panels:
@@ -306,6 +328,7 @@ async def ws_import_yaml_text(
     )
 
 
+@websocket_api.require_admin
 @websocket_api.websocket_command(
     {vol.Required("type"): "nspanel_editor/check_yaml_path"}
 )

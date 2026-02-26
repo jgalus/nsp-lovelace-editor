@@ -14,6 +14,9 @@
         },
         "abort": {
             "already_configured": "NSPanel Lovelace Editor is already configured."
+        },
+        "error": {
+            "path_not_allowed": "Path must be within an allowed directory (/config/, /addon_configs/, /homeassistant/, /share/)."
         }
     }
 }

@@ -39,7 +39,7 @@ ENTITY_SCHEMA = vol.Schema(
         vol.Optional("effectList"): str,
         vol.Optional("data"): dict,  # for service entities
     },
-    extra=vol.ALLOW_EXTRA,
+    extra=vol.REMOVE_EXTRA,
 )
 
 # --- Card schemas ---
@@ -146,7 +146,7 @@ SCREENSAVER_ENTITY_SCHEMA = vol.Schema(
         vol.Optional("color"): vol.Any(list, dict, str),
         vol.Optional("value"): str,
     },
-    extra=vol.ALLOW_EXTRA,
+    extra=vol.REMOVE_EXTRA,
 )
 
 STATUS_ICON_SCHEMA = vol.Schema(
@@ -156,7 +156,7 @@ STATUS_ICON_SCHEMA = vol.Schema(
         vol.Optional("color"): vol.Any(list, dict, str),
         vol.Optional("altFont"): bool,
     },
-    extra=vol.ALLOW_EXTRA,
+    extra=vol.REMOVE_EXTRA,
 )
 
 SCREENSAVER_SCHEMA = vol.Schema(
@@ -171,7 +171,7 @@ SCREENSAVER_SCHEMA = vol.Schema(
         vol.Optional("key"): str,
         vol.Optional("type"): vol.In(SCREENSAVER_TYPES),
     },
-    extra=vol.ALLOW_EXTRA,
+    extra=vol.REMOVE_EXTRA,
 )
 
 # --- Brightness schedule schema ---

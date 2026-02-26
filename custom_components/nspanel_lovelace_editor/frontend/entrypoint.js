@@ -1932,15 +1932,7 @@ let NspYamlPreview = class NspYamlPreview extends i {
             setTimeout(() => { this._copied = false; }, 2000);
         }
         catch {
-            // Fallback for older browsers
-            const textarea = document.createElement("textarea");
-            textarea.value = this._yaml;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textarea);
-            this._copied = true;
-            setTimeout(() => { this._copied = false; }, 2000);
+            // Clipboard API unavailable — ignore silently
         }
     }
     async _exportToFile() {
@@ -2856,13 +2848,7 @@ let NspNotificationEditor = class NspNotificationEditor extends i {
             await navigator.clipboard.writeText(yaml);
         }
         catch {
-            // Fallback for browsers that don't support the Clipboard API (legacy)
-            const ta = document.createElement("textarea");
-            ta.value = yaml;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand("copy");
-            document.body.removeChild(ta);
+            // Clipboard API unavailable — ignore silently
         }
         this._copied = true;
         setTimeout(() => {

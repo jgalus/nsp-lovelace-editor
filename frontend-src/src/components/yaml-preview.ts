@@ -36,15 +36,7 @@ export class NspYamlPreview extends LitElement {
       this._copied = true;
       setTimeout(() => { this._copied = false; }, 2000);
     } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement("textarea");
-      textarea.value = this._yaml;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      this._copied = true;
-      setTimeout(() => { this._copied = false; }, 2000);
+      // Clipboard API unavailable — ignore silently
     }
   }
 
