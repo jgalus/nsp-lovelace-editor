@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.3.3 — 2026-02-26
+
+### Security
+
+- **WebSocket API authorization** — Added `require_admin` to all 9 WebSocket
+  command handlers. Previously, any authenticated HA user (not just admins)
+  could read, write, and delete panel configs or trigger filesystem writes via
+  the `nspanel_editor/*` commands.
+- **Path traversal protection** — The `appdaemon_path` is now validated against
+  a set of allowed directory prefixes (`/config/`, `/addon_configs/`,
+  `/homeassistant/`, `/share/`). Previously any filesystem path was accepted,
+  allowing reads/writes to arbitrary files.
+- **Panel ID validation** — `panel_id` is now constrained to
+  `^[a-zA-Z0-9_-]{1,64}$`. Previously any string was accepted as a storage key.
+- **YAML import size limit** — The `import_yaml_text` endpoint now enforces a
+  1 MB maximum payload size to prevent YAML bomb / denial-of-service attacks.
+- **Schema validation on save** — `ws_save_panel` now validates panel data
+  against the Voluptuous schemas before persisting. Previously schema validators
+  existed but were never called.
+- **Error message sanitization** — WebSocket error responses no longer include
+  raw exception messages or filesystem paths. Full details are logged
+  server-side only.
+- **Temp file permissions** — Atomic write temp files now have explicit `0o644`
+  permissions set immediately after creation.
+- **Schema strictness** — Changed `vol.ALLOW_EXTRA` to `vol.REMOVE_EXTRA` on
+  entity, screensaver entity, status icon, and screensaver schemas to strip
+  unexpected fields.
+- **Clipboard fallback removed** — Removed deprecated `document.execCommand`
+  clipboard fallback that injected elements outside the Shadow DOM.
+
 ## 0.3.2 — 2026-02-26
 
 ### Fixed
