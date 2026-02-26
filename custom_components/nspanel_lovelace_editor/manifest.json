@@ -3,7 +3,7 @@
     "name": "NSPanel Lovelace Editor",
     "codeowners": [],
     "config_flow": true,
-    "dependencies": [],
+    "dependencies": ["http", "frontend"],
     "documentation": "https://github.com/jgalus/nsp-lovelace-editor",
     "integration_type": "service",
     "iot_class": "local_push",
