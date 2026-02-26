@@ -194,7 +194,7 @@ export class NspEntityEditor extends LitElement {
         <select .value=${mode} @change=${(e: Event) => {
           const m = (e.target as HTMLSelectElement).value;
           if (m === "none") this._updateField("icon", undefined);
-          else if (m === "simple") this._updateField("icon", "");
+          else if (m === "simple") this._fireChanged({ ...this.entity, icon: "" });
           else this._updateField("icon", {});
         }}>
           <option value="none">None</option>
@@ -220,7 +220,7 @@ export class NspEntityEditor extends LitElement {
           if (m === "none") this._updateField("color", undefined);
           else if (m === "rgb") this._updateField("color", [255, 255, 255]);
           else if (m === "map") this._updateField("color", {});
-          else this._updateField("color", "");
+          else this._fireChanged({ ...this.entity, color: "" });
         }}>
           <option value="none">None</option>
           <option value="rgb" ?selected=${mode === "rgb"}>RGB [R,G,B]</option>

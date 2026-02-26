@@ -1159,7 +1159,7 @@ let NspEntityEditor = class NspEntityEditor extends i {
             if (m === "none")
                 this._updateField("icon", undefined);
             else if (m === "simple")
-                this._updateField("icon", "");
+                this._fireChanged({ ...this.entity, icon: "" });
             else
                 this._updateField("icon", {});
         }}>
@@ -1189,7 +1189,7 @@ let NspEntityEditor = class NspEntityEditor extends i {
             else if (m === "map")
                 this._updateField("color", {});
             else
-                this._updateField("color", "");
+                this._fireChanged({ ...this.entity, color: "" });
         }}>
           <option value="none">None</option>
           <option value="rgb" ?selected=${mode === "rgb"}>RGB [R,G,B]</option>

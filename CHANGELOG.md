@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.2 — 2026-02-26
+
+### Fixed
+
+- **Icon/color override inputs not appearing** — Switching the "Icon Override"
+  selector to "Simple" (or "Color Override" to "Template") on an entity with no
+  prior override did not show the text input. The mode-switch handler passed an
+  empty string to `_updateField()`, which treated it as a cleared value and
+  deleted the field, so the UI never transitioned out of "None" mode.
+
 ## 0.2.2 — 2026-02-26
 
 ### Fixed
