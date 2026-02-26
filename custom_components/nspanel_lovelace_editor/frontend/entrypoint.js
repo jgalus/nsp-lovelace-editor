@@ -72,6 +72,2003 @@ const t=t=>(e,o)=>{ void 0!==o?o.addInitializer(()=>{customElements.define(t,e);
  * SPDX-License-Identifier: BSD-3-Clause
  */function r(r){return n({...r,state:true,attribute:false})}
 
+let NspPanelList = class NspPanelList extends i {
+    constructor() {
+        super(...arguments);
+        this.panels = {};
+        this._showImportDialog = false;
+        this._importText = "";
+        this._importing = false;
+    }
+    _fireSelect(panelId) {
+        this.dispatchEvent(new CustomEvent("panel-selected", { detail: { panelId }, bubbles: true, composed: true }));
+    }
+    _fireRefresh() {
+        this.dispatchEvent(new CustomEvent("refresh-panels", { bubbles: true, composed: true }));
+    }
+    async _importYaml() {
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/import_yaml" });
+            alert(`Imported ${result.count} panel(s): ${result.imported.join(", ")}`);
+            this._fireRefresh();
+        }
+        catch (err) {
+            alert(`Import failed: ${err.message}`);
+        }
+    }
+    async _importPastedYaml() {
+        if (!this._importText.trim())
+            return;
+        this._importing = true;
+        try {
+            const result = await this.hass.callWS({
+                type: "nspanel_editor/import_yaml_text",
+                yaml_text: this._importText,
+            });
+            alert(`Imported ${result.count} panel(s): ${result.imported.join(", ")}`);
+            this._showImportDialog = false;
+            this._importText = "";
+            this._fireRefresh();
+        }
+        catch (err) {
+            alert(`Import failed: ${err.message}`);
+        }
+        this._importing = false;
+    }
+    async _addNewPanel() {
+        const name = prompt("Enter a name for the new panel (e.g., nspanel-bedroom):");
+        if (!name)
+            return;
+        try {
+            await this.hass.callWS({
+                type: "nspanel_editor/save_panel",
+                panel_id: name,
+                config: {
+                    panelRecvTopic: `cmnd/${name}/CustomSend`,
+                    panelSendTopic: `tele/${name}/RESULT`,
+                    model: "eu",
+                    updateMode: "auto-notify",
+                    locale: "en_US",
+                },
+                cards: [],
+                hiddenCards: [],
+                screensaver: {},
+            });
+            this._fireRefresh();
+        }
+        catch (err) {
+            alert(`Failed to create panel: ${err.message}`);
+        }
+    }
+    render() {
+        const panelIds = Object.keys(this.panels);
+        return b `
+      <div class="panel-list">
+        <div class="header">
+          <h1>NSPanel Lovelace Editor</h1>
+          <div class="actions">
+            <button class="btn btn-primary" @click=${this._addNewPanel}>+ New Panel</button>
+            <button class="btn" @click=${this._importYaml}>Import from apps.yaml</button>
+            <button class="btn" @click=${() => { this._showImportDialog = true; }}>Import from pasted YAML</button>
+          </div>
+        </div>
+
+        ${this._showImportDialog ? this._renderImportDialog() : ""}
+
+        ${panelIds.length === 0
+            ? b `
+              <div class="empty-state">
+                <p>No NSPanel configurations found.</p>
+                <p>Import from an existing apps.yaml, paste YAML, or create a new panel.</p>
+              </div>
+            `
+            : b `
+              <div class="panel-grid">
+                ${panelIds.map((id) => this._renderPanelCard(id, this.panels[id]))}
+              </div>
+            `}
+      </div>
+    `;
+    }
+    _renderImportDialog() {
+        return b `
+      <div class="import-dialog">
+        <h3>Paste apps.yaml content</h3>
+        <textarea rows="12" placeholder="Paste your apps.yaml content here..."
+          .value=${this._importText}
+          @input=${(e) => { this._importText = e.target.value; }}></textarea>
+        <div class="dialog-actions">
+          <button class="btn" @click=${() => { this._showImportDialog = false; this._importText = ""; }}>Cancel</button>
+          <button class="btn btn-primary" ?disabled=${this._importing || !this._importText.trim()}
+            @click=${this._importPastedYaml}>
+            ${this._importing ? "Importing..." : "Import"}
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderPanelCard(id, panel) {
+        return b `
+      <div class="panel-card" @click=${() => this._fireSelect(id)}>
+        <h3>${id}</h3>
+        <div class="panel-info">
+          <span>Model: ${panel.model?.toUpperCase() || "EU"}</span>
+          <span>Cards: ${panel.card_count}</span>
+          ${panel.hidden_card_count > 0
+            ? b `<span>Hidden: ${panel.hidden_card_count}</span>`
+            : ""}
+          ${panel.has_screensaver
+            ? b `<span class="badge">Screensaver</span>`
+            : ""}
+        </div>
+      </div>
+    `;
+    }
+};
+NspPanelList.styles = i$3 `
+    :host { display: block; }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .header h1 { margin: 0; flex: 1; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn:hover { background: var(--secondary-background-color, #f5f5f5); }
+    .btn-primary {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .panel-card {
+      background: var(--card-background-color, white);
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      transition: box-shadow 0.2s;
+    }
+    .panel-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+    .panel-card h3 { margin: 0 0 8px 0; }
+    .panel-info {
+      display: flex;
+      gap: 12px;
+      color: var(--secondary-text-color, #727272);
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--secondary-text-color, #727272);
+    }
+    .import-dialog {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .import-dialog h3 { margin: 0 0 12px; }
+    .import-dialog textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      font-family: "Fira Code", "Consolas", monospace;
+      font-size: 13px;
+      resize: vertical;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+    }
+    .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspPanelList.prototype, "hass", void 0);
+__decorate([
+    n({ attribute: false })
+], NspPanelList.prototype, "panels", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_showImportDialog", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_importText", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_importing", void 0);
+NspPanelList = __decorate([
+    t("nsp-panel-list")
+], NspPanelList);
+
+/**
+ * TypeScript type definitions mirroring the backend schema.
+ * See: custom_components/nspanel_lovelace_editor/schema.py and const.py
+ */
+// --- Constants ---
+const CARD_TYPES = [
+    "cardEntities",
+    "cardGrid",
+    "cardThermo",
+    "cardMedia",
+    "cardAlarm",
+    "cardQR",
+    "cardPower",
+];
+const MODELS = ["eu", "us-l", "us-p"];
+const UPDATE_MODES = ["auto", "auto-notify", "manual"];
+const BACKGROUND_COLORS = ["ha-dark", "black"];
+const LOCALES = [
+    ["af_ZA", "Afrikaans"],
+    ["ar_SY", "Arabic"],
+    ["bg_BG", "Bulgarian"],
+    ["ca_ES", "Catalan"],
+    ["cs_CZ", "Czech"],
+    ["da_DK", "Danish"],
+    ["de_DE", "German"],
+    ["el_GR", "Greek"],
+    ["en_US", "English"],
+    ["es_ES", "Spanish"],
+    ["et_EE", "Estonian"],
+    ["fa_IR", "Persian"],
+    ["fi_FI", "Finnish"],
+    ["fr_FR", "French"],
+    ["he_IL", "Hebrew"],
+    ["hr_xx", "Croatian"],
+    ["hu_HU", "Hungarian"],
+    ["hy_AM", "Armenian"],
+    ["id_ID", "Indonesian"],
+    ["is_IS", "Icelandic"],
+    ["it_IT", "Italian"],
+    ["lb_xx", "Luxembourgish"],
+    ["lt_LT", "Lithuanian"],
+    ["lv_LV", "Latvian"],
+    ["nb_NO", "Norwegian"],
+    ["nl_NL", "Dutch"],
+    ["nn_NO", "Norwegian Nynorsk"],
+    ["pl_PL", "Polish"],
+    ["pt_PT", "Portuguese"],
+    ["ro_RO", "Romanian"],
+    ["ru_RU", "Russian"],
+    ["sk_SK", "Slovak"],
+    ["sl_SI", "Slovenian"],
+    ["sv_SE", "Swedish"],
+    ["th_TH", "Thai"],
+    ["tr_TR", "Turkish"],
+    ["uk_UA", "Ukrainian"],
+    ["vi_VN", "Vietnamese"],
+    ["zh_CN", "Simplified Chinese"],
+    ["zh_TW", "Traditional Chinese"],
+];
+const ENTITY_DOMAINS_CARD_ENTITIES = [
+    "cover", "switch", "input_boolean", "binary_sensor", "sensor", "button",
+    "number", "input_number", "scene", "script", "input_button", "light",
+    "input_text", "input_select", "lock", "fan", "automation",
+    "alarm_control_panel", "sun", "person", "climate",
+];
+const ENTITY_DOMAINS_CARD_QR = [
+    "switch", "input_boolean", "binary_sensor", "sensor", "button",
+    "scene", "script", "input_button", "input_select", "light",
+    "input_text", "lock", "automation",
+];
+// --- Helpers ---
+function getEntityDomainsForCard(cardType) {
+    switch (cardType) {
+        case "cardQR":
+            return ENTITY_DOMAINS_CARD_QR;
+        case "cardPower":
+            return ["sensor"];
+        case "cardThermo":
+            return ["climate"];
+        case "cardMedia":
+            return ["media_player"];
+        case "cardAlarm":
+            return ["alarm_control_panel"];
+        default:
+            return ENTITY_DOMAINS_CARD_ENTITIES;
+    }
+}
+function createDefaultCard(type) {
+    switch (type) {
+        case "cardEntities":
+            return { type, entities: [] };
+        case "cardGrid":
+            return { type, entities: [] };
+        case "cardThermo":
+            return { type, entity: "" };
+        case "cardMedia":
+            return { type, entity: "" };
+        case "cardAlarm":
+            return { type, entity: "" };
+        case "cardQR":
+            return { type, qrCode: "", entities: [] };
+        case "cardPower":
+            return { type, entities: [] };
+    }
+}
+function createDefaultEntity() {
+    return { entity: "" };
+}
+
+let NspSettingsEditor = class NspSettingsEditor extends i {
+    _fireChanged(updated) {
+        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: updated }, bubbles: true, composed: true }));
+    }
+    _updateField(field, value) {
+        const updated = { ...this.config, [field]: value };
+        if (value === undefined || value === "" || value === null) {
+            delete updated[field];
+        }
+        this._fireChanged(updated);
+    }
+    _getBrightnessMode(value) {
+        if (value === undefined || typeof value === "number")
+            return "static";
+        if (typeof value === "string")
+            return "entity";
+        return "schedule";
+    }
+    render() {
+        return b `
+      <div class="settings">
+        <section>
+          <h3>MQTT Topics</h3>
+          <div class="field">
+            <label>Panel Receive Topic</label>
+            <input type="text" .value=${this.config.panelRecvTopic || ""}
+              @input=${(e) => this._updateField("panelRecvTopic", e.target.value)} />
+          </div>
+          <div class="field">
+            <label>Panel Send Topic</label>
+            <input type="text" .value=${this.config.panelSendTopic || ""}
+              @input=${(e) => this._updateField("panelSendTopic", e.target.value)} />
+          </div>
+        </section>
+
+        <section>
+          <h3>Device</h3>
+          <div class="field-row">
+            <div class="field">
+              <label>Model</label>
+              <select .value=${this.config.model || "eu"}
+                @change=${(e) => this._updateField("model", e.target.value)}>
+                ${MODELS.map((m) => b `<option value=${m} ?selected=${this.config.model === m}>${m.toUpperCase()}</option>`)}
+              </select>
+            </div>
+            <div class="field">
+              <label>Update Mode</label>
+              <select .value=${this.config.updateMode || "auto-notify"}
+                @change=${(e) => this._updateField("updateMode", e.target.value)}>
+                ${UPDATE_MODES.map((m) => b `<option value=${m} ?selected=${this.config.updateMode === m}>${m}</option>`)}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>Display</h3>
+          <div class="field">
+            <label>Sleep Timeout (seconds)</label>
+            <input type="number" min="0" .value=${String(this.config.sleepTimeout ?? "")}
+              @input=${(e) => {
+            const v = e.target.value;
+            this._updateField("sleepTimeout", v ? Number(v) : undefined);
+        }} />
+          </div>
+          ${this._renderBrightnessField("screenBrightness", "Screen Brightness")}
+          ${this._renderBrightnessField("sleepBrightness", "Sleep Brightness")}
+          <div class="field">
+            <label>Default Background Color</label>
+            <select .value=${this.config.defaultBackgroundColor || ""}
+              @change=${(e) => this._updateField("defaultBackgroundColor", e.target.value || undefined)}>
+              <option value="">Default</option>
+              ${BACKGROUND_COLORS.map((c) => b `<option value=${c} ?selected=${this.config.defaultBackgroundColor === c}>${c}</option>`)}
+            </select>
+          </div>
+        </section>
+
+        <section>
+          <h3>Locale &amp; Time</h3>
+          <div class="field">
+            <label>Locale</label>
+            <select .value=${this.config.locale || "en_US"}
+              @change=${(e) => this._updateField("locale", e.target.value)}>
+              ${LOCALES.map(([code, name]) => b `<option value=${code} ?selected=${this.config.locale === code}>${name} (${code})</option>`)}
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Time Format</label>
+              <input type="text" .value=${this.config.timeFormat || ""} placeholder="%H:%M"
+                @input=${(e) => this._updateField("timeFormat", e.target.value)} />
+            </div>
+            <div class="field">
+              <label>Date Format</label>
+              <input type="text" .value=${this.config.dateFormat || ""} placeholder="%A, %d. %B %Y"
+                @input=${(e) => this._updateField("dateFormat", e.target.value)} />
+            </div>
+          </div>
+          <div class="field">
+            <label>Date Format (Babel)</label>
+            <input type="text" .value=${this.config.dateFormatBabel || ""} placeholder="full"
+              @input=${(e) => this._updateField("dateFormatBabel", e.target.value)} />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Date Additional Template</label>
+              <input type="text" .value=${this.config.dateAdditionalTemplate || ""}
+                @input=${(e) => this._updateField("dateAdditionalTemplate", e.target.value)} />
+            </div>
+            <div class="field">
+              <label>Time Additional Template</label>
+              <input type="text" .value=${this.config.timeAdditionalTemplate || ""}
+                @input=${(e) => this._updateField("timeAdditionalTemplate", e.target.value)} />
+            </div>
+          </div>
+          <div class="field">
+            <label>Timezone</label>
+            <input type="text" .value=${this.config.timezone || ""} placeholder="e.g. Europe/Berlin"
+              @input=${(e) => this._updateField("timezone", e.target.value)} />
+          </div>
+        </section>
+
+        <section>
+          <h3>Sleep Tracking</h3>
+          <div class="field">
+            <label>Sleep Tracking Entity</label>
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this.config.sleepTracking || ""}
+              .includeDomains=${["device_tracker", "person"]}
+              allow-custom-entity
+              @value-changed=${(e) => this._updateField("sleepTracking", e.detail.value)}
+            ></ha-entity-picker>
+          </div>
+          <div class="field">
+            <label>Sleep Tracking Zones (comma-separated)</label>
+            <input type="text" .value=${(this.config.sleepTrackingZones || []).join(", ")}
+              @input=${(e) => {
+            const val = e.target.value;
+            this._updateField("sleepTrackingZones", val ? val.split(",").map((s) => s.trim()) : undefined);
+        }} />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Sleep Override Entity</label>
+              <ha-entity-picker
+                .hass=${this.hass}
+                .value=${this.config.sleepOverride?.entity || ""}
+                allow-custom-entity
+                @value-changed=${(e) => {
+            const entity = e.detail.value;
+            if (entity) {
+                this._updateField("sleepOverride", {
+                    entity,
+                    brightness: this.config.sleepOverride?.brightness ?? 0,
+                });
+            }
+            else {
+                this._updateField("sleepOverride", undefined);
+            }
+        }}
+              ></ha-entity-picker>
+            </div>
+            <div class="field">
+              <label>Sleep Override Brightness</label>
+              <input type="number" min="0" max="100"
+                .value=${String(this.config.sleepOverride?.brightness ?? "")}
+                @input=${(e) => {
+            const v = parseInt(e.target.value);
+            if (this.config.sleepOverride?.entity) {
+                this._updateField("sleepOverride", {
+                    ...this.config.sleepOverride,
+                    brightness: isNaN(v) ? 0 : v,
+                });
+            }
+        }} />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3>OTA URL Overrides</h3>
+          ${["displayURL-EU", "displayURL-US-L", "displayURL-US-P", "berryURL"].map((key) => b `
+              <div class="field">
+                <label>${key}</label>
+                <input type="text" .value=${this.config[key] || ""}
+                  @input=${(e) => this._updateField(key, e.target.value)} />
+              </div>
+            `)}
+        </section>
+      </div>
+    `;
+    }
+    _renderBrightnessField(field, label) {
+        const value = this.config[field];
+        const mode = this._getBrightnessMode(value);
+        return b `
+      <div class="brightness-field">
+        <div class="field">
+          <label>${label}</label>
+          <select .value=${mode} @change=${(e) => {
+            const m = e.target.value;
+            if (m === "static")
+                this._updateField(field, typeof value === "number" ? value : 100);
+            else if (m === "entity")
+                this._updateField(field, "");
+            else
+                this._updateField(field, []);
+        }}>
+            <option value="static" ?selected=${mode === "static"}>Static value</option>
+            <option value="entity" ?selected=${mode === "entity"}>Entity reference</option>
+            <option value="schedule" ?selected=${mode === "schedule"}>Time schedule</option>
+          </select>
+        </div>
+        ${mode === "static" ? b `
+          <div class="field">
+            <input type="number" min="0" max="100" .value=${String(typeof value === "number" ? value : 100)}
+              @input=${(e) => this._updateField(field, Number(e.target.value))} />
+          </div>
+        ` : A}
+        ${mode === "entity" ? b `
+          <div class="field">
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${typeof value === "string" ? value : ""}
+              .includeDomains=${["input_number"]}
+              allow-custom-entity
+              @value-changed=${(e) => this._updateField(field, e.detail.value)}
+            ></ha-entity-picker>
+          </div>
+        ` : A}
+        ${mode === "schedule" ? this._renderScheduleEditor(field, Array.isArray(value) ? value : []) : A}
+      </div>
+    `;
+    }
+    _renderScheduleEditor(field, schedule) {
+        return b `
+      <div class="schedule-editor">
+        ${schedule.map((entry, i) => b `
+            <div class="schedule-row">
+              <input type="text" .value=${entry.time} placeholder="HH:MM:SS or sunrise/sunset"
+                @input=${(e) => {
+            const newSchedule = [...schedule];
+            newSchedule[i] = { ...entry, time: e.target.value };
+            this._updateField(field, newSchedule);
+        }} />
+              <input type="number" min="0" max="100" .value=${String(entry.value)}
+                @input=${(e) => {
+            const newSchedule = [...schedule];
+            newSchedule[i] = { ...entry, value: Number(e.target.value) };
+            this._updateField(field, newSchedule);
+        }} />
+              <button class="btn-icon" @click=${() => {
+            const newSchedule = schedule.filter((_, idx) => idx !== i);
+            this._updateField(field, newSchedule.length ? newSchedule : undefined);
+        }}>&#x2715;</button>
+            </div>
+          `)}
+        <button class="btn-sm" @click=${() => {
+            this._updateField(field, [...schedule, { time: "", value: 100 }]);
+        }}>+ Add time entry</button>
+      </div>
+    `;
+    }
+};
+NspSettingsEditor.styles = i$3 `
+    :host { display: block; }
+    .settings { display: flex; flex-direction: column; gap: 4px; }
+    section {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    section h3 { margin: 0 0 12px; font-size: 15px; color: var(--primary-text-color); }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { font-size: 12px; font-weight: 500; color: var(--secondary-text-color); }
+    .field input, .field select {
+      padding: 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 14px;
+    }
+    .field-row { display: flex; gap: 12px; }
+    .field-row .field { flex: 1; }
+    .brightness-field { margin-bottom: 12px; }
+    .schedule-editor { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .schedule-row { display: flex; gap: 8px; align-items: center; }
+    .schedule-row input[type="text"] { flex: 2; padding: 6px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 13px; background: var(--card-background-color, white); color: var(--primary-text-color); }
+    .schedule-row input[type="number"] { width: 60px; padding: 6px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 13px; background: var(--card-background-color, white); color: var(--primary-text-color); }
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; color: var(--error-color, #db4437); }
+    .btn-sm { align-self: flex-start; padding: 6px 12px; border: 1px dashed var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 12px; color: var(--primary-color); }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspSettingsEditor.prototype, "hass", void 0);
+__decorate([
+    n({ attribute: false })
+], NspSettingsEditor.prototype, "config", void 0);
+NspSettingsEditor = __decorate([
+    t("nsp-settings-editor")
+], NspSettingsEditor);
+
+let NspEntityEditor = class NspEntityEditor extends i {
+    constructor() {
+        super(...arguments);
+        this.includeDomains = [];
+        this.hiddenCardKeys = [];
+    }
+    _fireChanged(updated) {
+        this.dispatchEvent(new CustomEvent("entity-changed", { detail: { entity: updated }, bubbles: true, composed: true }));
+    }
+    _updateField(field, value) {
+        const updated = { ...this.entity, [field]: value };
+        if (value === undefined || value === "" || value === null) {
+            delete updated[field];
+        }
+        this._fireChanged(updated);
+    }
+    _isInternalEntity() {
+        const e = this.entity.entity || "";
+        if (e === "iText")
+            return "iText";
+        if (e === "delete")
+            return "delete";
+        if (e.startsWith("navigate."))
+            return "navigate";
+        if (e.startsWith("service."))
+            return "service";
+        return false;
+    }
+    _getIconMode() {
+        if (this.entity.icon === undefined)
+            return "none";
+        if (typeof this.entity.icon === "string")
+            return "simple";
+        return "map";
+    }
+    _getColorMode() {
+        if (this.entity.color === undefined)
+            return "none";
+        if (Array.isArray(this.entity.color))
+            return "rgb";
+        if (typeof this.entity.color === "object")
+            return "map";
+        return "template";
+    }
+    render() {
+        const internal = this._isInternalEntity();
+        return b `
+      <div class="entity-editor">
+        ${this._renderEntityPicker(internal)}
+        ${internal ? this._renderInternalFields(internal) : this._renderStandardFields()}
+      </div>
+    `;
+    }
+    _renderEntityPicker(internal) {
+        if (internal) {
+            return b `
+        <div class="field">
+          <label>Entity (internal)</label>
+          <input type="text" .value=${this.entity.entity}
+            @input=${(e) => this._updateField("entity", e.target.value)} />
+          <small>Internal entity: ${internal}</small>
+        </div>
+      `;
+        }
+        return b `
+      <div class="field">
+        <label>Entity</label>
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${this.entity.entity || ""}
+          .includeDomains=${this.includeDomains}
+          allow-custom-entity
+          @value-changed=${(e) => this._updateField("entity", e.detail.value)}
+        ></ha-entity-picker>
+      </div>
+    `;
+    }
+    _renderInternalFields(type) {
+        switch (type) {
+            case "iText":
+                return b `
+          <div class="field">
+            <label>Display Name</label>
+            <input type="text" .value=${this.entity.name || ""}
+              @input=${(e) => this._updateField("name", e.target.value)} />
+          </div>
+          <div class="field">
+            <label>Display Value</label>
+            <input type="text" .value=${this.entity.value || ""}
+              @input=${(e) => this._updateField("value", e.target.value)} />
+          </div>
+          ${this._renderIconField()}
+          ${this._renderColorField()}
+        `;
+            case "delete":
+                return b `<p class="hint">Placeholder entity — no additional fields.</p>`;
+            case "navigate":
+                return b `
+          <div class="field">
+            <label>Navigate to Hidden Card</label>
+            <select @change=${(e) => {
+                    const key = e.target.value;
+                    this._updateField("entity", key ? `navigate.${key}` : "navigate.");
+                }}>
+              <option value="">Select a key…</option>
+              ${this.hiddenCardKeys.map((k) => b `<option value=${k} ?selected=${this.entity.entity === `navigate.${k}`}>${k}</option>`)}
+            </select>
+          </div>
+          ${this._renderNameField()}
+          ${this._renderIconField()}
+          ${this._renderColorField()}
+        `;
+            case "service": {
+                const parts = (this.entity.entity || "service.").replace("service.", "").split(".");
+                const domain = parts[0] || "";
+                const service = parts[1] || "";
+                return b `
+          <div class="field-row">
+            <div class="field">
+              <label>Domain</label>
+              <input type="text" .value=${domain}
+                @input=${(e) => {
+                    const d = e.target.value;
+                    this._updateField("entity", `service.${d}.${service}`);
+                }} />
+            </div>
+            <div class="field">
+              <label>Service</label>
+              <input type="text" .value=${service}
+                @input=${(e) => {
+                    const s = e.target.value;
+                    this._updateField("entity", `service.${domain}.${s}`);
+                }} />
+            </div>
+          </div>
+          <div class="field">
+            <label>Service Data (JSON)</label>
+            <textarea rows="3"
+              .value=${this.entity.data ? JSON.stringify(this.entity.data, null, 2) : ""}
+              @change=${(e) => {
+                    try {
+                        const data = JSON.parse(e.target.value || "{}");
+                        this._updateField("data", data);
+                    }
+                    catch { /* ignore invalid JSON until committed */ }
+                }}></textarea>
+          </div>
+          ${this._renderNameField()}
+          ${this._renderIconField()}
+          ${this._renderColorField()}
+        `;
+            }
+        }
+    }
+    _renderStandardFields() {
+        return b `
+      ${this._renderNameField()}
+      <div class="field">
+        <label>Value Override</label>
+        <input type="text" .value=${this.entity.value || ""} placeholder="HA template supported"
+          @input=${(e) => this._updateField("value", e.target.value)} />
+      </div>
+      ${this._renderIconField()}
+      ${this._renderColorField()}
+      ${this._renderConditionalVisibility()}
+    `;
+    }
+    _renderNameField() {
+        return b `
+      <div class="field">
+        <label>Name Override</label>
+        <input type="text" .value=${this.entity.name || ""} placeholder="HA template supported"
+          @input=${(e) => this._updateField("name", e.target.value)} />
+      </div>
+    `;
+    }
+    _renderIconField() {
+        const mode = this._getIconMode();
+        return b `
+      <div class="field">
+        <label>Icon Override</label>
+        <select .value=${mode} @change=${(e) => {
+            const m = e.target.value;
+            if (m === "none")
+                this._updateField("icon", undefined);
+            else if (m === "simple")
+                this._updateField("icon", "");
+            else
+                this._updateField("icon", {});
+        }}>
+          <option value="none">None</option>
+          <option value="simple" ?selected=${mode === "simple"}>Simple</option>
+          <option value="map" ?selected=${mode === "map"}>Per-state map</option>
+        </select>
+        ${mode === "simple" ? b `
+          <input type="text" .value=${this.entity.icon || ""} placeholder="mdi:lightbulb"
+            @input=${(e) => this._updateField("icon", e.target.value)} />
+        ` : A}
+        ${mode === "map" ? this._renderStringMap("icon", this.entity.icon) : A}
+      </div>
+    `;
+    }
+    _renderColorField() {
+        const mode = this._getColorMode();
+        return b `
+      <div class="field">
+        <label>Color Override</label>
+        <select .value=${mode} @change=${(e) => {
+            const m = e.target.value;
+            if (m === "none")
+                this._updateField("color", undefined);
+            else if (m === "rgb")
+                this._updateField("color", [255, 255, 255]);
+            else if (m === "map")
+                this._updateField("color", {});
+            else
+                this._updateField("color", "");
+        }}>
+          <option value="none">None</option>
+          <option value="rgb" ?selected=${mode === "rgb"}>RGB [R,G,B]</option>
+          <option value="map" ?selected=${mode === "map"}>Per-state map</option>
+          <option value="template" ?selected=${mode === "template"}>Template string</option>
+        </select>
+        ${mode === "rgb" ? this._renderRGBInputs() : A}
+        ${mode === "template" ? b `
+          <input type="text" .value=${this.entity.color || ""} placeholder="HA template"
+            @input=${(e) => this._updateField("color", e.target.value)} />
+        ` : A}
+        ${mode === "map" ? this._renderStringMap("color", this.entity.color) : A}
+      </div>
+    `;
+    }
+    _renderRGBInputs() {
+        const c = (Array.isArray(this.entity.color) ? this.entity.color : [255, 255, 255]);
+        return b `
+      <div class="rgb-row">
+        ${["R", "G", "B"].map((label, i) => b `
+            <label>${label}</label>
+            <input type="number" min="0" max="255" .value=${String(c[i] ?? 0)}
+              @input=${(e) => {
+            const val = parseInt(e.target.value) || 0;
+            const newC = [...c];
+            newC[i] = Math.max(0, Math.min(255, val));
+            this._updateField("color", newC);
+        }} />
+          `)}
+      </div>
+    `;
+    }
+    _renderStringMap(field, map) {
+        const entries = Object.entries(map || {});
+        return b `
+      <div class="map-editor">
+        ${entries.map(([key, val], i) => b `
+            <div class="map-row">
+              <input type="text" .value=${key} placeholder="state"
+                @input=${(e) => {
+            const newKey = e.target.value;
+            const newMap = { ...map };
+            delete newMap[key];
+            newMap[newKey] = val;
+            this._updateField(field, newMap);
+        }} />
+              <input type="text" .value=${String(val)} placeholder="value"
+                @input=${(e) => {
+            const newMap = { ...map, [key]: e.target.value };
+            this._updateField(field, newMap);
+        }} />
+              <button class="btn-icon" @click=${() => {
+            const newMap = { ...map };
+            delete newMap[key];
+            this._updateField(field, Object.keys(newMap).length ? newMap : undefined);
+        }}>✕</button>
+            </div>
+          `)}
+        <button class="btn-sm" @click=${() => {
+            this._updateField(field, { ...map, "": "" });
+        }}>+ Add state</button>
+      </div>
+    `;
+    }
+    _renderConditionalVisibility() {
+        return b `
+      <details class="advanced">
+        <summary>Conditional Visibility</summary>
+        <div class="field">
+          <label>Show when state equals</label>
+          <input type="text" .value=${this.entity.state || ""}
+            @input=${(e) => this._updateField("state", e.target.value)} />
+        </div>
+        <div class="field">
+          <label>Hide when state equals</label>
+          <input type="text" .value=${this.entity.state_not || ""}
+            @input=${(e) => this._updateField("state_not", e.target.value)} />
+        </div>
+        <div class="field">
+          <label>Visibility template</label>
+          <input type="text" .value=${this.entity.state_template || ""} placeholder="Jinja2 template → truthy/falsy"
+            @input=${(e) => this._updateField("state_template", e.target.value)} />
+        </div>
+      </details>
+    `;
+    }
+};
+NspEntityEditor.styles = i$3 `
+    :host { display: block; }
+    .entity-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      background: var(--secondary-background-color, #f5f5f5);
+      border-radius: 8px;
+    }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 12px; font-weight: 500; color: var(--secondary-text-color); }
+    .field input, .field select, .field textarea {
+      padding: 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .field-row { display: flex; gap: 8px; }
+    .field-row .field { flex: 1; }
+    .rgb-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+    .rgb-row input { width: 60px; }
+    .rgb-row label { font-size: 12px; font-weight: 500; }
+    .map-editor { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .map-row { display: flex; gap: 4px; align-items: center; }
+    .map-row input { flex: 1; padding: 6px; border: 1px solid var(--divider-color); border-radius: 4px; background: var(--card-background-color, white); color: var(--primary-text-color); font-size: 13px; }
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; color: var(--error-color, #db4437); }
+    .btn-sm { align-self: flex-start; padding: 4px 12px; border: 1px dashed var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 12px; color: var(--primary-color); }
+    .hint { color: var(--secondary-text-color); font-size: 13px; font-style: italic; margin: 4px 0; }
+    small { color: var(--secondary-text-color); font-size: 11px; }
+    details.advanced { margin-top: 4px; }
+    details.advanced summary {
+      cursor: pointer; font-size: 13px; color: var(--secondary-text-color);
+      padding: 4px 0;
+    }
+    details.advanced[open] summary { margin-bottom: 8px; }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspEntityEditor.prototype, "hass", void 0);
+__decorate([
+    n({ attribute: false })
+], NspEntityEditor.prototype, "entity", void 0);
+__decorate([
+    n({ type: Array })
+], NspEntityEditor.prototype, "includeDomains", void 0);
+__decorate([
+    n({ type: Array })
+], NspEntityEditor.prototype, "hiddenCardKeys", void 0);
+NspEntityEditor = __decorate([
+    t("nsp-entity-editor")
+], NspEntityEditor);
+
+let NspCardEditor = class NspCardEditor extends i {
+    constructor() {
+        super(...arguments);
+        this.hiddenCardKeys = [];
+    }
+    _fireChanged(updated) {
+        this.dispatchEvent(new CustomEvent("card-changed", { detail: { card: updated }, bubbles: true, composed: true }));
+    }
+    _updateField(field, value) {
+        const updated = { ...this.card, [field]: value };
+        if (value === undefined || value === "" || value === null) {
+            delete updated[field];
+        }
+        this._fireChanged(updated);
+    }
+    _getEntities() {
+        return this.card.entities || [];
+    }
+    _updateEntity(index, entity) {
+        const entities = [...this._getEntities()];
+        entities[index] = entity;
+        this._updateField("entities", entities);
+    }
+    _addEntity() {
+        const entities = [...this._getEntities(), createDefaultEntity()];
+        this._updateField("entities", entities);
+    }
+    _removeEntity(index) {
+        const entities = this._getEntities().filter((_, i) => i !== index);
+        this._updateField("entities", entities);
+    }
+    _moveEntity(from, to) {
+        const entities = [...this._getEntities()];
+        const [item] = entities.splice(from, 1);
+        entities.splice(to, 0, item);
+        this._updateField("entities", entities);
+    }
+    render() {
+        return b `
+      <div class="card-editor">
+        ${this._renderCommonFields()}
+        ${this._renderTypeSpecificFields()}
+      </div>
+    `;
+    }
+    _renderCommonFields() {
+        return b `
+      <div class="field-row">
+        <div class="field">
+          <label>Title</label>
+          <input type="text" .value=${this.card.title || ""}
+            @input=${(e) => this._updateField("title", e.target.value)} />
+        </div>
+        <div class="field">
+          <label>Key</label>
+          <input type="text" .value=${this.card.key || ""}
+            @input=${(e) => this._updateField("key", e.target.value)} />
+        </div>
+      </div>
+    `;
+    }
+    _renderTypeSpecificFields() {
+        switch (this.card.type) {
+            case "cardEntities":
+            case "cardGrid":
+                return b `
+          ${this._renderEntityList()}
+          ${this._renderNavItems()}
+        `;
+            case "cardThermo":
+                return this._renderThermoFields();
+            case "cardMedia":
+                return this._renderMediaFields();
+            case "cardAlarm":
+                return this._renderAlarmFields();
+            case "cardQR":
+                return this._renderQRFields();
+            case "cardPower":
+                return this._renderPowerFields();
+            default:
+                return b `<p>Unknown card type: ${this.card.type}</p>`;
+        }
+    }
+    _renderEntityList() {
+        const entities = this._getEntities();
+        const domains = getEntityDomainsForCard(this.card.type);
+        return b `
+      <div class="entity-list">
+        <div class="section-header">
+          <label>Entities (${entities.length})</label>
+          <button class="btn-sm" @click=${this._addEntity}>+ Add Entity</button>
+        </div>
+        ${entities.map((entity, i) => b `
+            <div class="entity-item">
+              <div class="entity-header">
+                <span class="entity-grip" draggable="true"
+                  @dragstart=${(e) => { e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "move"; }}
+                  @dragover=${(e) => e.preventDefault()}
+                  @drop=${(e) => { e.preventDefault(); this._moveEntity(parseInt(e.dataTransfer.getData("text/plain")), i); }}>⠿</span>
+                <span class="entity-label">${entity.entity || "(empty)"}</span>
+                <button class="btn-icon" @click=${() => this._removeEntity(i)}>✕</button>
+              </div>
+              <nsp-entity-editor
+                .hass=${this.hass}
+                .entity=${entity}
+                .includeDomains=${domains}
+                .hiddenCardKeys=${this.hiddenCardKeys}
+                @entity-changed=${(e) => this._updateEntity(i, e.detail.entity)}
+              ></nsp-entity-editor>
+            </div>
+          `)}
+      </div>
+    `;
+    }
+    _renderNavItems() {
+        const card = this.card;
+        return b `
+      <details class="nav-items">
+        <summary>Navigation Item Overrides</summary>
+        <div class="field">
+          <label>navItem1</label>
+          ${card.navItem1 ? b `
+            <nsp-entity-editor
+              .hass=${this.hass}
+              .entity=${card.navItem1}
+              .includeDomains=${getEntityDomainsForCard(this.card.type)}
+              .hiddenCardKeys=${this.hiddenCardKeys}
+              @entity-changed=${(e) => this._updateField("navItem1", e.detail.entity)}
+            ></nsp-entity-editor>
+            <button class="btn-sm" @click=${() => this._updateField("navItem1", undefined)}>Remove navItem1</button>
+          ` : b `
+            <button class="btn-sm" @click=${() => this._updateField("navItem1", createDefaultEntity())}>+ Add navItem1</button>
+          `}
+        </div>
+        <div class="field">
+          <label>navItem2</label>
+          ${card.navItem2 ? b `
+            <nsp-entity-editor
+              .hass=${this.hass}
+              .entity=${card.navItem2}
+              .includeDomains=${getEntityDomainsForCard(this.card.type)}
+              .hiddenCardKeys=${this.hiddenCardKeys}
+              @entity-changed=${(e) => this._updateField("navItem2", e.detail.entity)}
+            ></nsp-entity-editor>
+            <button class="btn-sm" @click=${() => this._updateField("navItem2", undefined)}>Remove navItem2</button>
+          ` : b `
+            <button class="btn-sm" @click=${() => this._updateField("navItem2", createDefaultEntity())}>+ Add navItem2</button>
+          `}
+        </div>
+      </details>
+    `;
+    }
+    _renderThermoFields() {
+        const card = this.card;
+        return b `
+      <div class="field">
+        <label>Climate Entity</label>
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${card.entity || ""}
+          .includeDomains=${["climate"]}
+          @value-changed=${(e) => this._updateField("entity", e.detail.value)}
+        ></ha-entity-picker>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Temperature Unit</label>
+          <select .value=${card.temperatureUnit || "celsius"}
+            @change=${(e) => this._updateField("temperatureUnit", e.target.value)}>
+            <option value="celsius">Celsius</option>
+            <option value="fahrenheit">Fahrenheit</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Supported Modes (comma-separated)</label>
+        <input type="text" .value=${(card.supportedModes || []).join(", ")}
+          @input=${(e) => {
+            const val = e.target.value;
+            this._updateField("supportedModes", val ? val.split(",").map((s) => s.trim()) : undefined);
+        }} />
+      </div>
+    `;
+    }
+    _renderMediaFields() {
+        const card = this.card;
+        return b `
+      <div class="field">
+        <label>Media Player Entity</label>
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${card.entity || ""}
+          .includeDomains=${["media_player"]}
+          @value-changed=${(e) => this._updateField("entity", e.detail.value)}
+        ></ha-entity-picker>
+      </div>
+      <div class="field">
+        <label>Status Override</label>
+        <input type="text" .value=${card.status || ""}
+          @input=${(e) => this._updateField("status", e.target.value)} />
+      </div>
+      ${this._renderEntityList()}
+    `;
+    }
+    _renderAlarmFields() {
+        const card = this.card;
+        return b `
+      <div class="field">
+        <label>Alarm Control Panel Entity</label>
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${card.entity || ""}
+          .includeDomains=${["alarm_control_panel"]}
+          @value-changed=${(e) => this._updateField("entity", e.detail.value)}
+        ></ha-entity-picker>
+      </div>
+      <div class="field">
+        <label>Supported Modes (comma-separated)</label>
+        <input type="text" .value=${(card.supportedModes || []).join(", ")}
+          @input=${(e) => {
+            const val = e.target.value;
+            this._updateField("supportedModes", val ? val.split(",").map((s) => s.trim()) : undefined);
+        }} />
+      </div>
+    `;
+    }
+    _renderQRFields() {
+        const card = this.card;
+        return b `
+      <div class="field">
+        <label>QR Code Value</label>
+        <input type="text" .value=${card.qrCode || ""} placeholder="URL, text, or HA template"
+          @input=${(e) => this._updateField("qrCode", e.target.value)} />
+      </div>
+      ${this._renderEntityList()}
+    `;
+    }
+    _renderPowerFields() {
+        const card = this.card;
+        return b `
+      <div class="field">
+        <label>Cooldown (seconds)</label>
+        <input type="number" .value=${String(card.cooldown ?? "")}
+          @input=${(e) => {
+            const v = e.target.value;
+            this._updateField("cooldown", v ? Number(v) : undefined);
+        }} />
+      </div>
+      ${this._renderEntityList()}
+    `;
+    }
+};
+NspCardEditor.styles = i$3 `
+    :host { display: block; }
+    .card-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 12px; font-weight: 500; color: var(--secondary-text-color); }
+    .field input, .field select {
+      padding: 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 14px;
+    }
+    .field-row { display: flex; gap: 12px; }
+    .field-row .field { flex: 1; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; }
+    .section-header label { font-weight: 600; font-size: 14px; }
+    .entity-list { display: flex; flex-direction: column; gap: 8px; }
+    .entity-item {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .entity-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--card-background-color, white);
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+    }
+    .entity-grip { cursor: grab; user-select: none; color: var(--secondary-text-color); }
+    .entity-label { flex: 1; font-size: 13px; color: var(--primary-text-color); overflow: hidden; text-overflow: ellipsis; }
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; color: var(--error-color, #db4437); }
+    .btn-sm { padding: 6px 12px; border: 1px dashed var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 13px; color: var(--primary-color); }
+    details.nav-items summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--secondary-text-color); padding: 4px 0; }
+    details.nav-items[open] summary { margin-bottom: 12px; }
+    details.nav-items { border-top: 1px solid var(--divider-color); padding-top: 8px; }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspCardEditor.prototype, "hass", void 0);
+__decorate([
+    n({ attribute: false })
+], NspCardEditor.prototype, "card", void 0);
+__decorate([
+    n({ type: Array })
+], NspCardEditor.prototype, "hiddenCardKeys", void 0);
+NspCardEditor = __decorate([
+    t("nsp-card-editor")
+], NspCardEditor);
+
+let NspCardList = class NspCardList extends i {
+    constructor() {
+        super(...arguments);
+        this.cards = [];
+        this.hiddenCardKeys = [];
+        this.label = "Cards";
+        this._expandedIndex = null;
+        this._showAddDialog = false;
+        this._dragIndex = null;
+    }
+    _fireChanged(cards) {
+        this.dispatchEvent(new CustomEvent("cards-changed", { detail: { cards }, bubbles: true, composed: true }));
+    }
+    _addCard(type) {
+        const newCards = [...this.cards, createDefaultCard(type)];
+        this._showAddDialog = false;
+        this._expandedIndex = newCards.length - 1;
+        this._fireChanged(newCards);
+    }
+    _removeCard(index) {
+        if (!confirm(`Remove ${this.cards[index].type}${this.cards[index].title ? ` "${this.cards[index].title}"` : ""}?`))
+            return;
+        const newCards = this.cards.filter((_, i) => i !== index);
+        if (this._expandedIndex === index)
+            this._expandedIndex = null;
+        else if (this._expandedIndex !== null && this._expandedIndex > index)
+            this._expandedIndex--;
+        this._fireChanged(newCards);
+    }
+    _moveCard(from, to) {
+        if (from === to)
+            return;
+        const newCards = [...this.cards];
+        const [item] = newCards.splice(from, 1);
+        newCards.splice(to, 0, item);
+        if (this._expandedIndex === from)
+            this._expandedIndex = to;
+        else if (this._expandedIndex !== null) {
+            if (from < this._expandedIndex && to >= this._expandedIndex)
+                this._expandedIndex--;
+            else if (from > this._expandedIndex && to <= this._expandedIndex)
+                this._expandedIndex++;
+        }
+        this._fireChanged(newCards);
+    }
+    _updateCard(index, card) {
+        const newCards = [...this.cards];
+        newCards[index] = card;
+        this._fireChanged(newCards);
+    }
+    render() {
+        return b `
+      <div class="card-list">
+        <div class="list-header">
+          <h3>${this.label} (${this.cards.length})</h3>
+          <button class="btn btn-primary" @click=${() => { this._showAddDialog = true; }}>
+            + Add Card
+          </button>
+        </div>
+
+        ${this._showAddDialog ? this._renderAddDialog() : ""}
+
+        ${this.cards.length === 0
+            ? b `<p class="empty">No cards yet. Add one to get started.</p>`
+            : this.cards.map((card, i) => this._renderCardItem(card, i))}
+      </div>
+    `;
+    }
+    _renderAddDialog() {
+        return b `
+      <div class="add-dialog">
+        <p>Select card type:</p>
+        <div class="type-grid">
+          ${CARD_TYPES.map((type) => b `
+              <button class="type-btn" @click=${() => this._addCard(type)}>
+                ${type}
+              </button>
+            `)}
+        </div>
+        <button class="btn-sm" @click=${() => { this._showAddDialog = false; }}>Cancel</button>
+      </div>
+    `;
+    }
+    _renderCardItem(card, index) {
+        const isExpanded = this._expandedIndex === index;
+        const entityCount = card.entities?.length ?? (card.entity ? 1 : 0);
+        const isDragging = this._dragIndex === index;
+        return b `
+      <div class="card-item ${isDragging ? "dragging" : ""}"
+        draggable="true"
+        @dragstart=${(e) => {
+            this._dragIndex = index;
+            e.dataTransfer.setData("text/plain", String(index));
+            e.dataTransfer.effectAllowed = "move";
+        }}
+        @dragend=${() => { this._dragIndex = null; }}
+        @dragover=${(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+        @drop=${(e) => {
+            e.preventDefault();
+            this._dragIndex = null;
+            const from = parseInt(e.dataTransfer.getData("text/plain"));
+            this._moveCard(from, index);
+        }}>
+        <div class="card-header" @click=${() => { this._expandedIndex = isExpanded ? null : index; }}>
+          <span class="card-grip">⠿</span>
+          <span class="card-type">${card.type}</span>
+          ${card.title ? b `<span class="card-title">"${card.title}"</span>` : ""}
+          ${card.key ? b `<span class="card-key">[${card.key}]</span>` : ""}
+          <span class="card-entities">${entityCount} entit${entityCount === 1 ? "y" : "ies"}</span>
+          <span class="spacer"></span>
+          <button class="btn-icon expand-btn">${isExpanded ? "▼" : "▶"}</button>
+          <button class="btn-icon delete-btn" @click=${(e) => { e.stopPropagation(); this._removeCard(index); }}>✕</button>
+        </div>
+        ${isExpanded ? b `
+          <div class="card-body">
+            <nsp-card-editor
+              .hass=${this.hass}
+              .card=${card}
+              .hiddenCardKeys=${this.hiddenCardKeys}
+              @card-changed=${(e) => this._updateCard(index, e.detail.card)}
+            ></nsp-card-editor>
+          </div>
+        ` : ""}
+      </div>
+    `;
+    }
+};
+NspCardList.styles = i$3 `
+    :host { display: block; }
+    .card-list { display: flex; flex-direction: column; gap: 8px; }
+    .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .list-header h3 { margin: 0; font-size: 16px; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .add-dialog {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .add-dialog p { margin: 0 0 12px; font-size: 14px; }
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .type-btn {
+      padding: 12px 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 6px;
+      background: var(--secondary-background-color, #f5f5f5);
+      cursor: pointer;
+      font-size: 13px;
+      text-align: center;
+      color: var(--primary-text-color);
+    }
+    .type-btn:hover { background: var(--primary-color); color: white; }
+    .btn-sm { padding: 4px 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 12px; color: var(--secondary-text-color); }
+    .card-item {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      background: var(--card-background-color, white);
+      overflow: hidden;
+      transition: opacity 0.2s;
+    }
+    .card-item.dragging { opacity: 0.5; }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .card-header:hover { background: var(--secondary-background-color, #f5f5f5); }
+    .card-grip { cursor: grab; color: var(--secondary-text-color); }
+    .card-type { font-weight: 600; font-size: 14px; }
+    .card-title { font-size: 13px; color: var(--secondary-text-color); }
+    .card-key { font-size: 12px; color: var(--secondary-text-color); font-family: monospace; }
+    .card-entities { font-size: 12px; color: var(--secondary-text-color); }
+    .spacer { flex: 1; }
+    .btn-icon { background: none; border: none; cursor: pointer; padding: 4px 8px; font-size: 14px; color: var(--secondary-text-color); }
+    .delete-btn:hover { color: var(--error-color, #db4437); }
+    .card-body { padding: 16px; border-top: 1px solid var(--divider-color, #e0e0e0); }
+    .empty { text-align: center; color: var(--secondary-text-color); font-size: 14px; padding: 24px; }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspCardList.prototype, "hass", void 0);
+__decorate([
+    n({ type: Array })
+], NspCardList.prototype, "cards", void 0);
+__decorate([
+    n({ type: Array })
+], NspCardList.prototype, "hiddenCardKeys", void 0);
+__decorate([
+    n({ type: String })
+], NspCardList.prototype, "label", void 0);
+__decorate([
+    r()
+], NspCardList.prototype, "_expandedIndex", void 0);
+__decorate([
+    r()
+], NspCardList.prototype, "_showAddDialog", void 0);
+__decorate([
+    r()
+], NspCardList.prototype, "_dragIndex", void 0);
+NspCardList = __decorate([
+    t("nsp-card-list")
+], NspCardList);
+
+let NspYamlPreview = class NspYamlPreview extends i {
+    constructor() {
+        super(...arguments);
+        this._yaml = "";
+        this._loading = true;
+        this._error = null;
+        this._copied = false;
+    }
+    async connectedCallback() {
+        super.connectedCallback();
+        await this._loadPreview();
+    }
+    async _loadPreview() {
+        this._loading = true;
+        this._error = null;
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/preview_yaml" });
+            this._yaml = result.yaml || "";
+        }
+        catch (err) {
+            this._error = err.message || "Failed to load YAML preview";
+        }
+        this._loading = false;
+    }
+    async _copyToClipboard() {
+        try {
+            await navigator.clipboard.writeText(this._yaml);
+            this._copied = true;
+            setTimeout(() => { this._copied = false; }, 2000);
+        }
+        catch {
+            // Fallback for older browsers
+            const textarea = document.createElement("textarea");
+            textarea.value = this._yaml;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            this._copied = true;
+            setTimeout(() => { this._copied = false; }, 2000);
+        }
+    }
+    render() {
+        if (this._loading) {
+            return b `<div class="loading">Loading YAML preview...</div>`;
+        }
+        if (this._error) {
+            return b `<div class="error">${this._error}</div>`;
+        }
+        return b `
+      <div class="yaml-preview">
+        <div class="toolbar">
+          <button class="btn" @click=${this._loadPreview}>Refresh</button>
+          <button class="btn btn-primary" @click=${this._copyToClipboard}>
+            ${this._copied ? "Copied!" : "Copy to Clipboard"}
+          </button>
+        </div>
+        <pre><code>${this._yaml}</code></pre>
+      </div>
+    `;
+    }
+};
+NspYamlPreview.styles = i$3 `
+    :host { display: block; }
+    .yaml-preview { display: flex; flex-direction: column; gap: 12px; }
+    .toolbar { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    pre {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+      overflow: auto;
+      max-height: 600px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    code { font-family: "Fira Code", "Consolas", monospace; color: var(--primary-text-color); }
+    .loading { text-align: center; padding: 32px; color: var(--secondary-text-color); }
+    .error {
+      background: var(--error-color, #db4437);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+    }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspYamlPreview.prototype, "hass", void 0);
+__decorate([
+    r()
+], NspYamlPreview.prototype, "_yaml", void 0);
+__decorate([
+    r()
+], NspYamlPreview.prototype, "_loading", void 0);
+__decorate([
+    r()
+], NspYamlPreview.prototype, "_error", void 0);
+__decorate([
+    r()
+], NspYamlPreview.prototype, "_copied", void 0);
+NspYamlPreview = __decorate([
+    t("nsp-yaml-preview")
+], NspYamlPreview);
+
+const TAB_LABELS = {
+    settings: "Settings",
+    cards: "Cards",
+    hiddenCards: "Hidden Cards",
+    screensaver: "Screensaver",
+    yaml: "YAML Preview",
+};
+let NspPanelEditor = class NspPanelEditor extends i {
+    constructor() {
+        super(...arguments);
+        this._data = null;
+        this._activeTab = "settings";
+        this._loading = true;
+        this._saving = false;
+        this._error = null;
+        this._dirty = false;
+    }
+    async connectedCallback() {
+        super.connectedCallback();
+        await this._loadPanel();
+    }
+    async _loadPanel() {
+        this._loading = true;
+        this._error = null;
+        try {
+            const result = await this.hass.callWS({
+                type: "nspanel_editor/get_panel",
+                panel_id: this.panelId,
+            });
+            this._data = {
+                config: result.config || {},
+                cards: result.cards || [],
+                hiddenCards: result.hiddenCards || [],
+                screensaver: result.screensaver || {},
+            };
+            this._dirty = false;
+        }
+        catch (err) {
+            this._error = err.message || "Failed to load panel";
+        }
+        this._loading = false;
+    }
+    async _savePanel() {
+        if (!this._data)
+            return;
+        this._saving = true;
+        try {
+            await this.hass.callWS({
+                type: "nspanel_editor/save_panel",
+                panel_id: this.panelId,
+                config: this._data.config,
+                cards: this._data.cards,
+                hiddenCards: this._data.hiddenCards,
+                screensaver: this._data.screensaver,
+            });
+            this._dirty = false;
+        }
+        catch (err) {
+            alert(`Save failed: ${err.message}`);
+        }
+        this._saving = false;
+    }
+    async _deletePanel() {
+        if (!confirm(`Delete panel "${this.panelId}"? This cannot be undone.`))
+            return;
+        try {
+            await this.hass.callWS({
+                type: "nspanel_editor/delete_panel",
+                panel_id: this.panelId,
+            });
+            this._fireBack();
+        }
+        catch (err) {
+            alert(`Delete failed: ${err.message}`);
+        }
+    }
+    _fireBack() {
+        this.dispatchEvent(new CustomEvent("back-to-list", { bubbles: true, composed: true }));
+    }
+    _handleBack() {
+        if (this._dirty && !confirm("You have unsaved changes. Discard and go back?"))
+            return;
+        this._fireBack();
+    }
+    _onConfigChanged(e) {
+        if (!this._data)
+            return;
+        this._data = { ...this._data, config: e.detail.config };
+        this._dirty = true;
+    }
+    _onCardsChanged(e) {
+        if (!this._data)
+            return;
+        this._data = { ...this._data, cards: e.detail.cards };
+        this._dirty = true;
+    }
+    _onHiddenCardsChanged(e) {
+        if (!this._data)
+            return;
+        this._data = { ...this._data, hiddenCards: e.detail.cards };
+        this._dirty = true;
+    }
+    _getHiddenCardKeys() {
+        if (!this._data)
+            return [];
+        return this._data.hiddenCards
+            .map((c) => c.key)
+            .filter((k) => !!k);
+    }
+    render() {
+        if (this._loading) {
+            return b `<div class="loading">Loading panel configuration...</div>`;
+        }
+        if (this._error) {
+            return b `
+        <div class="error-container">
+          <div class="error">${this._error}</div>
+          <button class="btn" @click=${this._fireBack}>Back to list</button>
+        </div>
+      `;
+        }
+        if (!this._data)
+            return A;
+        return b `
+      <div class="panel-editor">
+        <div class="header">
+          <button class="btn" @click=${this._handleBack}>&larr; Back</button>
+          <h2>${this.panelId}</h2>
+          ${this._dirty ? b `<span class="dirty-badge">Unsaved</span>` : ""}
+          <span class="spacer"></span>
+          <button class="btn btn-danger" @click=${this._deletePanel}>Delete Panel</button>
+          <button class="btn btn-primary" ?disabled=${this._saving} @click=${this._savePanel}>
+            ${this._saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+
+        <div class="tabs">
+          ${Object.keys(TAB_LABELS).map((tab) => b `
+              <button class="tab ${this._activeTab === tab ? "active" : ""}"
+                @click=${() => { this._activeTab = tab; }}>
+                ${TAB_LABELS[tab]}
+                ${tab === "cards" ? b `<span class="count">${this._data.cards.length}</span>` : ""}
+                ${tab === "hiddenCards" ? b `<span class="count">${this._data.hiddenCards.length}</span>` : ""}
+              </button>
+            `)}
+        </div>
+
+        <div class="tab-content">
+          ${this._renderActiveTab()}
+        </div>
+      </div>
+    `;
+    }
+    _renderActiveTab() {
+        if (!this._data)
+            return A;
+        switch (this._activeTab) {
+            case "settings":
+                return b `
+          <nsp-settings-editor
+            .hass=${this.hass}
+            .config=${this._data.config}
+            @config-changed=${this._onConfigChanged}
+          ></nsp-settings-editor>
+        `;
+            case "cards":
+                return b `
+          <nsp-card-list
+            .hass=${this.hass}
+            .cards=${this._data.cards}
+            .hiddenCardKeys=${this._getHiddenCardKeys()}
+            label="Cards"
+            @cards-changed=${this._onCardsChanged}
+          ></nsp-card-list>
+        `;
+            case "hiddenCards":
+                return b `
+          <nsp-card-list
+            .hass=${this.hass}
+            .cards=${this._data.hiddenCards}
+            .hiddenCardKeys=${this._getHiddenCardKeys()}
+            label="Hidden Cards"
+            @cards-changed=${this._onHiddenCardsChanged}
+          ></nsp-card-list>
+        `;
+            case "screensaver":
+                return this._renderScreensaverReadonly();
+            case "yaml":
+                return b `
+          <nsp-yaml-preview .hass=${this.hass}></nsp-yaml-preview>
+        `;
+        }
+    }
+    _renderScreensaverReadonly() {
+        const sc = this._data?.screensaver;
+        if (!sc || Object.keys(sc).length === 0) {
+            return b `<p class="empty">No screensaver configured. Full screensaver editor coming in a future update.</p>`;
+        }
+        return b `
+      <div class="screensaver-readonly">
+        <p class="hint">Screensaver config (read-only). Full editor coming in a future update.</p>
+        <pre><code>${JSON.stringify(sc, null, 2)}</code></pre>
+      </div>
+    `;
+    }
+};
+NspPanelEditor.styles = i$3 `
+    :host { display: block; }
+    .panel-editor { display: flex; flex-direction: column; gap: 16px; }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .header h2 { margin: 0; }
+    .spacer { flex: 1; }
+    .dirty-badge {
+      background: var(--warning-color, #ffa726);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn:hover { background: var(--secondary-background-color, #f5f5f5); }
+    .btn-primary {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-danger {
+      color: var(--error-color, #db4437);
+      border-color: var(--error-color, #db4437);
+    }
+    .btn-danger:hover { background: var(--error-color, #db4437); color: white; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--divider-color, #e0e0e0);
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 10px 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--secondary-text-color);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab:hover { color: var(--primary-text-color); }
+    .tab.active {
+      color: var(--primary-color, #03a9f4);
+      border-bottom-color: var(--primary-color, #03a9f4);
+      font-weight: 500;
+    }
+    .count {
+      background: var(--secondary-background-color, #e0e0e0);
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+    .tab.active .count { background: var(--primary-color, #03a9f4); color: white; }
+    .tab-content { min-height: 200px; }
+    .loading { text-align: center; padding: 48px; color: var(--secondary-text-color); }
+    .error-container { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+    .error {
+      background: var(--error-color, #db4437);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .empty { text-align: center; color: var(--secondary-text-color); padding: 32px; }
+    .screensaver-readonly { display: flex; flex-direction: column; gap: 8px; }
+    .hint { color: var(--secondary-text-color); font-size: 13px; font-style: italic; margin: 0; }
+    pre {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+      overflow: auto;
+      max-height: 400px;
+      font-size: 13px;
+      margin: 0;
+    }
+    code { font-family: "Fira Code", "Consolas", monospace; }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspPanelEditor.prototype, "hass", void 0);
+__decorate([
+    n({ type: String })
+], NspPanelEditor.prototype, "panelId", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_data", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_activeTab", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_loading", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_saving", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_error", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_dirty", void 0);
+NspPanelEditor = __decorate([
+    t("nsp-panel-editor")
+], NspPanelEditor);
+
 let NsPanelLovelaceEditor = class NsPanelLovelaceEditor extends i {
     constructor() {
         super(...arguments);
@@ -99,34 +2096,8 @@ let NsPanelLovelaceEditor = class NsPanelLovelaceEditor extends i {
         }
         this._loading = false;
     }
-    async _importYaml() {
-        try {
-            const result = await this.hass.callWS({
-                type: "nspanel_editor/import_yaml",
-            });
-            alert(`Imported ${result.count} panel(s): ${result.imported.join(", ")}`);
-            await this._loadPanels();
-        }
-        catch (err) {
-            alert(`Import failed: ${err.message}`);
-        }
-    }
-    async _exportYaml() {
-        if (!confirm("Export all panel configs to apps.yaml? This will overwrite NSPanel entries in the file.")) {
-            return;
-        }
-        try {
-            const result = await this.hass.callWS({
-                type: "nspanel_editor/export_yaml",
-            });
-            alert(`Exported ${result.count} panel(s) to apps.yaml`);
-        }
-        catch (err) {
-            alert(`Export failed: ${err.message}`);
-        }
-    }
-    _selectPanel(panelId) {
-        this._selectedPanel = panelId;
+    _selectPanel(e) {
+        this._selectedPanel = e.detail.panelId;
     }
     _backToList() {
         this._selectedPanel = null;
@@ -141,65 +2112,25 @@ let NsPanelLovelaceEditor = class NsPanelLovelaceEditor extends i {
       `;
         }
         if (this._selectedPanel) {
-            return this._renderPanelEditor();
+            return b `
+        <div class="container">
+          <nsp-panel-editor
+            .hass=${this.hass}
+            .panelId=${this._selectedPanel}
+            @back-to-list=${this._backToList}
+          ></nsp-panel-editor>
+        </div>
+      `;
         }
-        return this._renderPanelList();
-    }
-    _renderPanelList() {
-        const panelIds = Object.keys(this._panels);
         return b `
       <div class="container">
-        <div class="header">
-          <h1>NSPanel Lovelace Editor</h1>
-          <div class="actions">
-            <button class="btn btn-primary" @click=${this._importYaml}>
-              Import from apps.yaml
-            </button>
-            <button class="btn" @click=${this._exportYaml}>
-              Export to apps.yaml
-            </button>
-          </div>
-        </div>
-
         ${this._error ? b `<div class="error">${this._error}</div>` : ""}
-
-        ${panelIds.length === 0
-            ? b `
-              <div class="empty-state">
-                <p>No NSPanel configurations found.</p>
-                <p>Import from an existing apps.yaml or create a new panel.</p>
-              </div>
-            `
-            : b `
-              <div class="panel-grid">
-                ${panelIds.map((id) => b `
-                    <div class="panel-card" @click=${() => this._selectPanel(id)}>
-                      <h3>${id}</h3>
-                      <div class="panel-info">
-                        <span>Model: ${this._panels[id].model}</span>
-                        <span>Cards: ${this._panels[id].card_count}</span>
-                        ${this._panels[id].hidden_card_count > 0
-                ? b `<span>Hidden: ${this._panels[id].hidden_card_count}</span>`
-                : ""}
-                      </div>
-                    </div>
-                  `)}
-              </div>
-            `}
-      </div>
-    `;
-    }
-    _renderPanelEditor() {
-        return b `
-      <div class="container">
-        <div class="header">
-          <button class="btn" @click=${this._backToList}>← Back</button>
-          <h2>Editing: ${this._selectedPanel}</h2>
-        </div>
-        <div class="editor-placeholder">
-          <p>Panel editor for <strong>${this._selectedPanel}</strong> — coming in Phase 3.</p>
-          <p>Use the WebSocket API directly for now.</p>
-        </div>
+        <nsp-panel-list
+          .hass=${this.hass}
+          .panels=${this._panels}
+          @panel-selected=${this._selectPanel}
+          @refresh-panels=${this._loadPanels}
+        ></nsp-panel-list>
       </div>
     `;
     }
@@ -219,85 +2150,6 @@ NsPanelLovelaceEditor.styles = i$3 `
       margin: 0 auto;
     }
 
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-
-    .header h1,
-    .header h2 {
-      margin: 0;
-      flex: 1;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 4px;
-      background: var(--card-background-color, white);
-      color: var(--primary-text-color, #212121);
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .btn:hover {
-      background: var(--secondary-background-color, #f5f5f5);
-    }
-
-    .btn-primary {
-      background: var(--primary-color, #03a9f4);
-      color: white;
-      border-color: var(--primary-color, #03a9f4);
-    }
-
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
-
-    .panel-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-    }
-
-    .panel-card {
-      background: var(--card-background-color, white);
-      border-radius: 8px;
-      padding: 16px;
-      cursor: pointer;
-      border: 1px solid var(--divider-color, #e0e0e0);
-      transition: box-shadow 0.2s;
-    }
-
-    .panel-card:hover {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .panel-card h3 {
-      margin: 0 0 8px 0;
-    }
-
-    .panel-info {
-      display: flex;
-      gap: 12px;
-      color: var(--secondary-text-color, #727272);
-      font-size: 14px;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 48px;
-      color: var(--secondary-text-color, #727272);
-    }
-
     .loading {
       text-align: center;
       padding: 48px;
@@ -309,14 +2161,6 @@ NsPanelLovelaceEditor.styles = i$3 `
       padding: 12px 16px;
       border-radius: 4px;
       margin-bottom: 16px;
-    }
-
-    .editor-placeholder {
-      background: var(--card-background-color, white);
-      border-radius: 8px;
-      padding: 32px;
-      text-align: center;
-      border: 1px solid var(--divider-color, #e0e0e0);
     }
   `;
 __decorate([
