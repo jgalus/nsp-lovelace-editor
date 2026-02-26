@@ -72,6 +72,26 @@ const t=t=>(e,o)=>{ void 0!==o?o.addInitializer(()=>{customElements.define(t,e);
  * SPDX-License-Identifier: BSD-3-Clause
  */function r(r){return n({...r,state:true,attribute:false})}
 
+/**
+ * Ensure Home Assistant frontend components (like ha-entity-picker) are loaded.
+ *
+ * HA lazy-loads many web-components; custom panels need to trigger the load
+ * explicitly.  `loadCardHelpers()` is the de-facto standard way custom
+ * integrations achieve this.
+ */
+async function loadHaComponents() {
+    // loadCardHelpers is injected by the HA frontend and triggers loading of
+    // card-related web-components (entity-picker, icon-picker, etc.)
+    if (window.loadCardHelpers) {
+        try {
+            await window.loadCardHelpers();
+        }
+        catch {
+            // ignore – fallback picker will be used
+        }
+    }
+}
+
 let NspPanelList = class NspPanelList extends i {
     constructor() {
         super(...arguments);
@@ -417,6 +437,236 @@ function createDefaultEntity() {
     return { entity: "" };
 }
 
+/**
+ * Self-contained entity picker that works without HA's built-in
+ * `ha-entity-picker`.  Uses `hass.states` for suggestions and fires
+ * `value-changed` with the same shape as the HA component.
+ */
+let NspEntityPicker = class NspEntityPicker extends i {
+    constructor() {
+        super(...arguments);
+        this.value = "";
+        this.includeDomains = [];
+        this.allowCustomEntity = false;
+        this.label = "";
+        this.placeholder = "";
+        this._filter = "";
+        this._opened = false;
+    }
+    _getEntities() {
+        if (!this.hass?.states)
+            return [];
+        return Object.keys(this.hass.states)
+            .filter((eid) => {
+            if (this.includeDomains.length === 0)
+                return true;
+            const domain = eid.split(".")[0];
+            return this.includeDomains.includes(domain);
+        })
+            .map((eid) => ({
+            id: eid,
+            name: this.hass.states[eid]?.attributes?.friendly_name || eid,
+        }))
+            .sort((a, b) => a.id.localeCompare(b.id));
+    }
+    _getFiltered() {
+        const q = this._filter.toLowerCase();
+        if (!q)
+            return this._getEntities().slice(0, 50);
+        return this._getEntities()
+            .filter((e) => e.id.toLowerCase().includes(q) ||
+            e.name.toLowerCase().includes(q))
+            .slice(0, 50);
+    }
+    _onInput(e) {
+        const val = e.target.value;
+        this._filter = val;
+        this._opened = true;
+        if (this.allowCustomEntity) {
+            this._setValue(val);
+        }
+    }
+    _onFocus() {
+        this._filter = this.value || "";
+        this._opened = true;
+    }
+    _onBlur() {
+        // Delay to allow click on suggestion
+        setTimeout(() => {
+            this._opened = false;
+        }, 200);
+    }
+    _select(entityId) {
+        this._filter = entityId;
+        this._opened = false;
+        this._setValue(entityId);
+    }
+    _setValue(val) {
+        this.dispatchEvent(new CustomEvent("value-changed", {
+            detail: { value: val },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _clear() {
+        this._filter = "";
+        this._opened = false;
+        this._setValue("");
+    }
+    render() {
+        const filtered = this._opened ? this._getFiltered() : [];
+        const displayValue = this._opened ? this._filter : this.value;
+        return b `
+      <div class="picker">
+        <div class="input-row">
+          <input
+            type="text"
+            .value=${displayValue || ""}
+            placeholder=${this.placeholder || "Search entities..."}
+            @input=${this._onInput}
+            @focus=${this._onFocus}
+            @blur=${this._onBlur}
+          />
+          ${this.value
+            ? b `<button class="clear-btn" @mousedown=${(e) => {
+                e.preventDefault();
+                this._clear();
+            }}>✕</button>`
+            : ""}
+        </div>
+        ${this._opened && filtered.length > 0
+            ? b `
+              <div class="suggestions">
+                ${filtered.map((e) => b `
+                    <div
+                      class="suggestion ${e.id === this.value ? "selected" : ""}"
+                      @mousedown=${(ev) => {
+                ev.preventDefault();
+                this._select(e.id);
+            }}
+                    >
+                      <span class="entity-id">${e.id}</span>
+                      ${e.name !== e.id
+                ? b `<span class="friendly-name">${e.name}</span>`
+                : ""}
+                    </div>
+                  `)}
+              </div>
+            `
+            : ""}
+      </div>
+    `;
+    }
+};
+NspEntityPicker.styles = i$3 `
+    :host {
+      display: block;
+      position: relative;
+    }
+    .picker {
+      position: relative;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      padding-right: 32px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 14px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .clear-btn {
+      position: absolute;
+      right: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 6px;
+      color: var(--secondary-text-color, #727272);
+    }
+    .clear-btn:hover {
+      color: var(--error-color, #db4437);
+    }
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 240px;
+      overflow-y: auto;
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 10;
+    }
+    .suggestion {
+      padding: 8px 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .suggestion:hover {
+      background: var(--secondary-background-color, #f5f5f5);
+    }
+    .suggestion.selected {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+    }
+    .suggestion.selected .friendly-name {
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .entity-id {
+      font-size: 13px;
+    }
+    .friendly-name {
+      font-size: 11px;
+      color: var(--secondary-text-color, #727272);
+    }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspEntityPicker.prototype, "hass", void 0);
+__decorate([
+    n({ type: String })
+], NspEntityPicker.prototype, "value", void 0);
+__decorate([
+    n({ type: Array })
+], NspEntityPicker.prototype, "includeDomains", void 0);
+__decorate([
+    n({ type: Boolean, attribute: "allow-custom-entity" })
+], NspEntityPicker.prototype, "allowCustomEntity", void 0);
+__decorate([
+    n({ type: String })
+], NspEntityPicker.prototype, "label", void 0);
+__decorate([
+    n({ type: String })
+], NspEntityPicker.prototype, "placeholder", void 0);
+__decorate([
+    r()
+], NspEntityPicker.prototype, "_filter", void 0);
+__decorate([
+    r()
+], NspEntityPicker.prototype, "_opened", void 0);
+NspEntityPicker = __decorate([
+    t("nsp-entity-picker")
+], NspEntityPicker);
+
 let NspSettingsEditor = class NspSettingsEditor extends i {
     _fireChanged(updated) {
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: updated }, bubbles: true, composed: true }));
@@ -543,13 +793,13 @@ let NspSettingsEditor = class NspSettingsEditor extends i {
           <h3>Sleep Tracking</h3>
           <div class="field">
             <label>Sleep Tracking Entity</label>
-            <ha-entity-picker
+            <nsp-entity-picker
               .hass=${this.hass}
               .value=${this.config.sleepTracking || ""}
               .includeDomains=${["device_tracker", "person"]}
               allow-custom-entity
               @value-changed=${(e) => this._updateField("sleepTracking", e.detail.value)}
-            ></ha-entity-picker>
+            ></nsp-entity-picker>
           </div>
           <div class="field">
             <label>Sleep Tracking Zones (comma-separated)</label>
@@ -562,7 +812,7 @@ let NspSettingsEditor = class NspSettingsEditor extends i {
           <div class="field-row">
             <div class="field">
               <label>Sleep Override Entity</label>
-              <ha-entity-picker
+              <nsp-entity-picker
                 .hass=${this.hass}
                 .value=${this.config.sleepOverride?.entity || ""}
                 allow-custom-entity
@@ -578,7 +828,7 @@ let NspSettingsEditor = class NspSettingsEditor extends i {
                 this._updateField("sleepOverride", undefined);
             }
         }}
-              ></ha-entity-picker>
+              ></nsp-entity-picker>
             </div>
             <div class="field">
               <label>Sleep Override Brightness</label>
@@ -639,13 +889,13 @@ let NspSettingsEditor = class NspSettingsEditor extends i {
         ` : A}
         ${mode === "entity" ? b `
           <div class="field">
-            <ha-entity-picker
+            <nsp-entity-picker
               .hass=${this.hass}
               .value=${typeof value === "string" ? value : ""}
               .includeDomains=${["input_number"]}
               allow-custom-entity
               @value-changed=${(e) => this._updateField(field, e.detail.value)}
-            ></ha-entity-picker>
+            ></nsp-entity-picker>
           </div>
         ` : A}
         ${mode === "schedule" ? this._renderScheduleEditor(field, Array.isArray(value) ? value : []) : A}
@@ -790,13 +1040,13 @@ let NspEntityEditor = class NspEntityEditor extends i {
         return b `
       <div class="field">
         <label>Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${this.entity.entity || ""}
           .includeDomains=${this.includeDomains}
           allow-custom-entity
           @value-changed=${(e) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
     `;
     }
@@ -1087,6 +1337,7 @@ let NspCardEditor = class NspCardEditor extends i {
     constructor() {
         super(...arguments);
         this.hiddenCardKeys = [];
+        this._expandedEntity = null;
     }
     _fireChanged(updated) {
         this.dispatchEvent(new CustomEvent("card-changed", { detail: { card: updated }, bubbles: true, composed: true }));
@@ -1108,6 +1359,7 @@ let NspCardEditor = class NspCardEditor extends i {
     }
     _addEntity() {
         const entities = [...this._getEntities(), createDefaultEntity()];
+        this._expandedEntity = entities.length - 1;
         this._updateField("entities", entities);
     }
     _removeEntity(index) {
@@ -1177,21 +1429,25 @@ let NspCardEditor = class NspCardEditor extends i {
         </div>
         ${entities.map((entity, i) => b `
             <div class="entity-item">
-              <div class="entity-header">
+              <div class="entity-header" @click=${() => { this._expandedEntity = this._expandedEntity === i ? null : i; }}>
                 <span class="entity-grip" draggable="true"
-                  @dragstart=${(e) => { e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "move"; }}
+                  @dragstart=${(e) => { e.stopPropagation(); e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "move"; }}
                   @dragover=${(e) => e.preventDefault()}
-                  @drop=${(e) => { e.preventDefault(); this._moveEntity(parseInt(e.dataTransfer.getData("text/plain")), i); }}>⠿</span>
+                  @drop=${(e) => { e.preventDefault(); this._moveEntity(parseInt(e.dataTransfer.getData("text/plain")), i); }}
+                  @click=${(e) => e.stopPropagation()}>⠿</span>
                 <span class="entity-label">${entity.entity || "(empty)"}</span>
-                <button class="btn-icon" @click=${() => this._removeEntity(i)}>✕</button>
+                <span class="expand-indicator">${this._expandedEntity === i ? "▼" : "▶"}</span>
+                <button class="btn-icon" @click=${(e) => { e.stopPropagation(); this._removeEntity(i); }}>✕</button>
               </div>
-              <nsp-entity-editor
-                .hass=${this.hass}
-                .entity=${entity}
-                .includeDomains=${domains}
-                .hiddenCardKeys=${this.hiddenCardKeys}
-                @entity-changed=${(e) => this._updateEntity(i, e.detail.entity)}
-              ></nsp-entity-editor>
+              ${this._expandedEntity === i ? b `
+                <nsp-entity-editor
+                  .hass=${this.hass}
+                  .entity=${entity}
+                  .includeDomains=${domains}
+                  .hiddenCardKeys=${this.hiddenCardKeys}
+                  @entity-changed=${(e) => { e.stopPropagation(); this._updateEntity(i, e.detail.entity); }}
+                ></nsp-entity-editor>
+              ` : ""}
             </div>
           `)}
       </div>
@@ -1210,7 +1466,7 @@ let NspCardEditor = class NspCardEditor extends i {
               .entity=${card.navItem1}
               .includeDomains=${getEntityDomainsForCard(this.card.type)}
               .hiddenCardKeys=${this.hiddenCardKeys}
-              @entity-changed=${(e) => this._updateField("navItem1", e.detail.entity)}
+              @entity-changed=${(e) => { e.stopPropagation(); this._updateField("navItem1", e.detail.entity); }}
             ></nsp-entity-editor>
             <button class="btn-sm" @click=${() => this._updateField("navItem1", undefined)}>Remove navItem1</button>
           ` : b `
@@ -1225,7 +1481,7 @@ let NspCardEditor = class NspCardEditor extends i {
               .entity=${card.navItem2}
               .includeDomains=${getEntityDomainsForCard(this.card.type)}
               .hiddenCardKeys=${this.hiddenCardKeys}
-              @entity-changed=${(e) => this._updateField("navItem2", e.detail.entity)}
+              @entity-changed=${(e) => { e.stopPropagation(); this._updateField("navItem2", e.detail.entity); }}
             ></nsp-entity-editor>
             <button class="btn-sm" @click=${() => this._updateField("navItem2", undefined)}>Remove navItem2</button>
           ` : b `
@@ -1240,12 +1496,12 @@ let NspCardEditor = class NspCardEditor extends i {
         return b `
       <div class="field">
         <label>Climate Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${card.entity || ""}
           .includeDomains=${["climate"]}
           @value-changed=${(e) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
       <div class="field-row">
         <div class="field">
@@ -1272,12 +1528,12 @@ let NspCardEditor = class NspCardEditor extends i {
         return b `
       <div class="field">
         <label>Media Player Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${card.entity || ""}
           .includeDomains=${["media_player"]}
           @value-changed=${(e) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
       <div class="field">
         <label>Status Override</label>
@@ -1292,12 +1548,12 @@ let NspCardEditor = class NspCardEditor extends i {
         return b `
       <div class="field">
         <label>Alarm Control Panel Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${card.entity || ""}
           .includeDomains=${["alarm_control_panel"]}
           @value-changed=${(e) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
       <div class="field">
         <label>Supported Modes (comma-separated)</label>
@@ -1360,7 +1616,6 @@ NspCardEditor.styles = i$3 `
     .entity-item {
       border: 1px solid var(--divider-color, #e0e0e0);
       border-radius: 8px;
-      overflow: hidden;
     }
     .entity-header {
       display: flex;
@@ -1368,10 +1623,13 @@ NspCardEditor.styles = i$3 `
       gap: 8px;
       padding: 8px 12px;
       background: var(--card-background-color, white);
-      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      cursor: pointer;
+      user-select: none;
     }
+    .entity-header:hover { background: var(--secondary-background-color, #f5f5f5); }
     .entity-grip { cursor: grab; user-select: none; color: var(--secondary-text-color); }
-    .entity-label { flex: 1; font-size: 13px; color: var(--primary-text-color); overflow: hidden; text-overflow: ellipsis; }
+    .entity-label { flex: 1; font-size: 13px; color: var(--primary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .expand-indicator { font-size: 12px; color: var(--secondary-text-color); }
     .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; color: var(--error-color, #db4437); }
     .btn-sm { padding: 6px 12px; border: 1px dashed var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 13px; color: var(--primary-color); }
     details.nav-items summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--secondary-text-color); padding: 4px 0; }
@@ -1387,6 +1645,9 @@ __decorate([
 __decorate([
     n({ type: Array })
 ], NspCardEditor.prototype, "hiddenCardKeys", void 0);
+__decorate([
+    r()
+], NspCardEditor.prototype, "_expandedEntity", void 0);
 NspCardEditor = __decorate([
     t("nsp-card-editor")
 ], NspCardEditor);
@@ -2080,6 +2341,8 @@ let NsPanelLovelaceEditor = class NsPanelLovelaceEditor extends i {
     }
     async connectedCallback() {
         super.connectedCallback();
+        // Trigger HA to load lazy components (ha-entity-picker, etc.)
+        loadHaComponents();
         await this._loadPanels();
     }
     async _loadPanels() {

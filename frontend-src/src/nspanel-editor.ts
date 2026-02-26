@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, PanelSummary } from "./models/types";
+import { loadHaComponents } from "./utils/load-ha-components";
 import "./components/panel-list";
 import "./components/panel-editor";
 
@@ -18,6 +19,8 @@ export class NsPanelLovelaceEditor extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
+    // Trigger HA to load lazy components (ha-entity-picker, etc.)
+    loadHaComponents();
     await this._loadPanels();
   }
 

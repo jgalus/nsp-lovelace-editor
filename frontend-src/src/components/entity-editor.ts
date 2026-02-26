@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import type { HomeAssistant, EntityConfig } from "../models/types";
+import "./nsp-entity-picker";
 
 @customElement("nsp-entity-editor")
 export class NspEntityEditor extends LitElement {
@@ -71,13 +72,13 @@ export class NspEntityEditor extends LitElement {
     return html`
       <div class="field">
         <label>Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${this.entity.entity || ""}
           .includeDomains=${this.includeDomains}
           allow-custom-entity
           @value-changed=${(e: CustomEvent) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
     `;
   }

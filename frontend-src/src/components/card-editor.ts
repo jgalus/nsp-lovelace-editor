@@ -1,8 +1,9 @@
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, CardConfig, EntityConfig, CardType } from "../models/types";
 import { getEntityDomainsForCard, createDefaultEntity } from "../models/types";
 import "./entity-editor";
+import "./nsp-entity-picker";
 
 @customElement("nsp-card-editor")
 export class NspCardEditor extends LitElement {
@@ -10,6 +11,7 @@ export class NspCardEditor extends LitElement {
   @property({ attribute: false }) public card!: CardConfig;
   @property({ type: Array }) public hiddenCardKeys: string[] = [];
 
+  @state() private _expandedEntity: number | null = null;
   private _fireChanged(updated: CardConfig) {
     this.dispatchEvent(
       new CustomEvent("card-changed", { detail: { card: updated }, bubbles: true, composed: true })
@@ -36,6 +38,7 @@ export class NspCardEditor extends LitElement {
 
   private _addEntity() {
     const entities = [...this._getEntities(), createDefaultEntity()];
+    this._expandedEntity = entities.length - 1;
     this._updateField("entities", entities);
   }
 
@@ -113,21 +116,25 @@ export class NspCardEditor extends LitElement {
         ${entities.map(
           (entity, i) => html`
             <div class="entity-item">
-              <div class="entity-header">
+              <div class="entity-header" @click=${() => { this._expandedEntity = this._expandedEntity === i ? null : i; }}>
                 <span class="entity-grip" draggable="true"
-                  @dragstart=${(e: DragEvent) => { e.dataTransfer!.setData("text/plain", String(i)); e.dataTransfer!.effectAllowed = "move"; }}
+                  @dragstart=${(e: DragEvent) => { e.stopPropagation(); e.dataTransfer!.setData("text/plain", String(i)); e.dataTransfer!.effectAllowed = "move"; }}
                   @dragover=${(e: DragEvent) => e.preventDefault()}
-                  @drop=${(e: DragEvent) => { e.preventDefault(); this._moveEntity(parseInt(e.dataTransfer!.getData("text/plain")), i); }}>⠿</span>
+                  @drop=${(e: DragEvent) => { e.preventDefault(); this._moveEntity(parseInt(e.dataTransfer!.getData("text/plain")), i); }}
+                  @click=${(e: Event) => e.stopPropagation()}>⠿</span>
                 <span class="entity-label">${entity.entity || "(empty)"}</span>
-                <button class="btn-icon" @click=${() => this._removeEntity(i)}>✕</button>
+                <span class="expand-indicator">${this._expandedEntity === i ? "▼" : "▶"}</span>
+                <button class="btn-icon" @click=${(e: Event) => { e.stopPropagation(); this._removeEntity(i); }}>✕</button>
               </div>
-              <nsp-entity-editor
-                .hass=${this.hass}
-                .entity=${entity}
-                .includeDomains=${domains}
-                .hiddenCardKeys=${this.hiddenCardKeys}
-                @entity-changed=${(e: CustomEvent) => this._updateEntity(i, e.detail.entity)}
-              ></nsp-entity-editor>
+              ${this._expandedEntity === i ? html`
+                <nsp-entity-editor
+                  .hass=${this.hass}
+                  .entity=${entity}
+                  .includeDomains=${domains}
+                  .hiddenCardKeys=${this.hiddenCardKeys}
+                  @entity-changed=${(e: CustomEvent) => { e.stopPropagation(); this._updateEntity(i, e.detail.entity); }}
+                ></nsp-entity-editor>
+              ` : ""}
             </div>
           `
         )}
@@ -148,7 +155,7 @@ export class NspCardEditor extends LitElement {
               .entity=${card.navItem1}
               .includeDomains=${getEntityDomainsForCard(this.card.type)}
               .hiddenCardKeys=${this.hiddenCardKeys}
-              @entity-changed=${(e: CustomEvent) => this._updateField("navItem1", e.detail.entity)}
+              @entity-changed=${(e: CustomEvent) => { e.stopPropagation(); this._updateField("navItem1", e.detail.entity); }}
             ></nsp-entity-editor>
             <button class="btn-sm" @click=${() => this._updateField("navItem1", undefined)}>Remove navItem1</button>
           ` : html`
@@ -163,7 +170,7 @@ export class NspCardEditor extends LitElement {
               .entity=${card.navItem2}
               .includeDomains=${getEntityDomainsForCard(this.card.type)}
               .hiddenCardKeys=${this.hiddenCardKeys}
-              @entity-changed=${(e: CustomEvent) => this._updateField("navItem2", e.detail.entity)}
+              @entity-changed=${(e: CustomEvent) => { e.stopPropagation(); this._updateField("navItem2", e.detail.entity); }}
             ></nsp-entity-editor>
             <button class="btn-sm" @click=${() => this._updateField("navItem2", undefined)}>Remove navItem2</button>
           ` : html`
@@ -179,12 +186,12 @@ export class NspCardEditor extends LitElement {
     return html`
       <div class="field">
         <label>Climate Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${card.entity || ""}
           .includeDomains=${["climate"]}
           @value-changed=${(e: CustomEvent) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
       <div class="field-row">
         <div class="field">
@@ -212,12 +219,12 @@ export class NspCardEditor extends LitElement {
     return html`
       <div class="field">
         <label>Media Player Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${card.entity || ""}
           .includeDomains=${["media_player"]}
           @value-changed=${(e: CustomEvent) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
       <div class="field">
         <label>Status Override</label>
@@ -233,12 +240,12 @@ export class NspCardEditor extends LitElement {
     return html`
       <div class="field">
         <label>Alarm Control Panel Entity</label>
-        <ha-entity-picker
+        <nsp-entity-picker
           .hass=${this.hass}
           .value=${card.entity || ""}
           .includeDomains=${["alarm_control_panel"]}
           @value-changed=${(e: CustomEvent) => this._updateField("entity", e.detail.value)}
-        ></ha-entity-picker>
+        ></nsp-entity-picker>
       </div>
       <div class="field">
         <label>Supported Modes (comma-separated)</label>
@@ -303,7 +310,6 @@ export class NspCardEditor extends LitElement {
     .entity-item {
       border: 1px solid var(--divider-color, #e0e0e0);
       border-radius: 8px;
-      overflow: hidden;
     }
     .entity-header {
       display: flex;
@@ -311,10 +317,13 @@ export class NspCardEditor extends LitElement {
       gap: 8px;
       padding: 8px 12px;
       background: var(--card-background-color, white);
-      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      cursor: pointer;
+      user-select: none;
     }
+    .entity-header:hover { background: var(--secondary-background-color, #f5f5f5); }
     .entity-grip { cursor: grab; user-select: none; color: var(--secondary-text-color); }
-    .entity-label { flex: 1; font-size: 13px; color: var(--primary-text-color); overflow: hidden; text-overflow: ellipsis; }
+    .entity-label { flex: 1; font-size: 13px; color: var(--primary-text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .expand-indicator { font-size: 12px; color: var(--secondary-text-color); }
     .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; color: var(--error-color, #db4437); }
     .btn-sm { padding: 6px 12px; border: 1px dashed var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 13px; color: var(--primary-color); }
     details.nav-items summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--secondary-text-color); padding: 4px 0; }

@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, PanelConfig, BrightnessScheduleEntry, BrightnessValue } from "../models/types";
 import { MODELS, UPDATE_MODES, BACKGROUND_COLORS, LOCALES } from "../models/types";
+import "./nsp-entity-picker";
 
 @customElement("nsp-settings-editor")
 export class NspSettingsEditor extends LitElement {
@@ -136,13 +137,13 @@ export class NspSettingsEditor extends LitElement {
           <h3>Sleep Tracking</h3>
           <div class="field">
             <label>Sleep Tracking Entity</label>
-            <ha-entity-picker
+            <nsp-entity-picker
               .hass=${this.hass}
               .value=${this.config.sleepTracking || ""}
               .includeDomains=${["device_tracker", "person"]}
               allow-custom-entity
               @value-changed=${(e: CustomEvent) => this._updateField("sleepTracking", e.detail.value)}
-            ></ha-entity-picker>
+            ></nsp-entity-picker>
           </div>
           <div class="field">
             <label>Sleep Tracking Zones (comma-separated)</label>
@@ -155,7 +156,7 @@ export class NspSettingsEditor extends LitElement {
           <div class="field-row">
             <div class="field">
               <label>Sleep Override Entity</label>
-              <ha-entity-picker
+              <nsp-entity-picker
                 .hass=${this.hass}
                 .value=${this.config.sleepOverride?.entity || ""}
                 allow-custom-entity
@@ -170,7 +171,7 @@ export class NspSettingsEditor extends LitElement {
                     this._updateField("sleepOverride", undefined);
                   }
                 }}
-              ></ha-entity-picker>
+              ></nsp-entity-picker>
             </div>
             <div class="field">
               <label>Sleep Override Brightness</label>
@@ -232,13 +233,13 @@ export class NspSettingsEditor extends LitElement {
         ` : nothing}
         ${mode === "entity" ? html`
           <div class="field">
-            <ha-entity-picker
+            <nsp-entity-picker
               .hass=${this.hass}
               .value=${typeof value === "string" ? value : ""}
               .includeDomains=${["input_number"]}
               allow-custom-entity
               @value-changed=${(e: CustomEvent) => this._updateField(field, e.detail.value)}
-            ></ha-entity-picker>
+            ></nsp-entity-picker>
           </div>
         ` : nothing}
         ${mode === "schedule" ? this._renderScheduleEditor(field, Array.isArray(value) ? value : []) : nothing}
