@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version consistency
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          MANIFEST_VER=$(grep '"version"' custom_components/nspanel_lovelace_editor/manifest.json | sed 's/.*: *"\(.*\)".*/\1/')
+          if [ "$TAG" != "$MANIFEST_VER" ]; then
+            echo "::error::Tag ($TAG) does not match manifest.json version ($MANIFEST_VER)"
+            exit 1
+          fi
+
+      - name: Determine release severity
+        id: severity
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          MAJOR=$(echo "$TAG" | cut -d. -f1)
+          MINOR=$(echo "$TAG" | cut -d. -f2)
+          PATCH=$(echo "$TAG" | cut -d. -f3)
+
+          if [ "$MAJOR" = "0" ]; then
+            # Pre-1.0: minor = features, patch = bugfix
+            if [ "$PATCH" = "0" ]; then
+              SEVERITY="Feature Release"
+            else
+              SEVERITY="Bugfix Release"
+            fi
+          else
+            if [ "$MINOR" = "0" ] && [ "$PATCH" = "0" ]; then
+              SEVERITY="Major Release"
+            elif [ "$PATCH" = "0" ]; then
+              SEVERITY="Feature Release"
+            else
+              SEVERITY="Bugfix Release"
+            fi
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "severity=$SEVERITY" >> "$GITHUB_OUTPUT"
+          echo "Release: v$TAG — $SEVERITY"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build frontend
+        run: cd frontend-src && npm ci && npm run build
+
+      - name: Verify built frontend matches committed
+        run: |
+          if ! git diff --quiet custom_components/nspanel_lovelace_editor/frontend/entrypoint.js; then
+            echo "::error::Built frontend differs from committed version. Run 'npm run build' locally and commit before tagging."
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.severity.outputs.tag }} — ${{ steps.severity.outputs.severity }}"
+          generate_release_notes: true
