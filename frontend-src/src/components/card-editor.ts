@@ -4,6 +4,7 @@ import type { HomeAssistant, CardConfig, EntityConfig, CardType } from "../model
 import { getEntityDomainsForCard, createDefaultEntity } from "../models/types";
 import "./entity-editor";
 import "./nsp-entity-picker";
+import "./nsp-mode-picker";
 
 @customElement("nsp-card-editor")
 export class NspCardEditor extends LitElement {
@@ -204,12 +205,14 @@ export class NspCardEditor extends LitElement {
         </div>
       </div>
       <div class="field">
-        <label>Supported Modes (comma-separated)</label>
-        <input type="text" .value=${(card.supportedModes || []).join(", ")}
-          @input=${(e: Event) => {
-            const val = (e.target as HTMLInputElement).value;
-            this._updateField("supportedModes", val ? val.split(",").map((s: string) => s.trim()) : undefined);
-          }} />
+        <nsp-mode-picker
+          .hass=${this.hass}
+          .entity=${card.entity || ""}
+          .value=${card.supportedModes || []}
+          .modeType=${"climate"}
+          label="Supported Modes"
+          @value-changed=${(e: CustomEvent) => this._updateField("supportedModes", e.detail.value)}
+        ></nsp-mode-picker>
       </div>
     `;
   }
@@ -248,12 +251,14 @@ export class NspCardEditor extends LitElement {
         ></nsp-entity-picker>
       </div>
       <div class="field">
-        <label>Supported Modes (comma-separated)</label>
-        <input type="text" .value=${(card.supportedModes || []).join(", ")}
-          @input=${(e: Event) => {
-            const val = (e.target as HTMLInputElement).value;
-            this._updateField("supportedModes", val ? val.split(",").map((s: string) => s.trim()) : undefined);
-          }} />
+        <nsp-mode-picker
+          .hass=${this.hass}
+          .entity=${card.entity || ""}
+          .value=${card.supportedModes || []}
+          .modeType=${"alarm"}
+          label="Supported Modes"
+          @value-changed=${(e: CustomEvent) => this._updateField("supportedModes", e.detail.value)}
+        ></nsp-mode-picker>
       </div>
       <details class="advanced-section">
         <summary>alarmControl Override</summary>

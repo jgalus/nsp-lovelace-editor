@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 — 2026-02-26
+
+### Added
+
+- **Multiselect mode pickers** — `cardThermo` and `cardAlarm` now use chip-based
+  toggle pickers for `supportedModes` instead of free-text comma-separated input.
+  When an entity is selected, the picker dynamically reads its attributes
+  (`hvac_modes` for climate, `supported_features` bitmask for alarm) to show
+  only the modes the entity actually supports. Falls back to the full known mode
+  list when no entity is selected. Includes a custom mode input for edge cases.
+
 ## 0.3.3 — 2026-02-26
 
 ### Security

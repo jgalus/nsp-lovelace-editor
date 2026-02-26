@@ -345,6 +345,12 @@ const CARD_TYPES = [
 const MODELS = ["eu", "us-l", "us-p"];
 const UPDATE_MODES = ["auto", "auto-notify", "manual"];
 const BACKGROUND_COLORS = ["ha-dark", "black"];
+const CLIMATE_MODES = [
+    "off", "heat", "cool", "auto", "dry", "fan_only",
+];
+const ALARM_MODES = [
+    "arm_home", "arm_away", "arm_night", "arm_vacation", "arm_custom_bypass",
+];
 const LOCALES = [
     ["af_ZA", "Afrikaans"],
     ["ar_SY", "Arabic"],
@@ -1333,6 +1339,225 @@ NspEntityEditor = __decorate([
     t("nsp-entity-editor")
 ], NspEntityEditor);
 
+let NspModePicker = class NspModePicker extends i {
+    constructor() {
+        super(...arguments);
+        this.entity = "";
+        this.value = [];
+        this.modeType = "climate";
+        this.label = "Supported Modes";
+        this._customInput = "";
+    }
+    _getAvailableModes() {
+        if (this.entity && this.hass?.states?.[this.entity]) {
+            const attrs = this.hass.states[this.entity].attributes;
+            if (this.modeType === "climate" && Array.isArray(attrs?.hvac_modes)) {
+                return attrs.hvac_modes;
+            }
+            if (this.modeType === "alarm") {
+                // HA alarm entities don't directly list arm modes in attributes,
+                // but supported_features bitmask indicates which are available:
+                // 1=arm_home, 2=arm_away, 4=trigger, 8=arm_night, 16=arm_vacation, 32=arm_custom_bypass
+                const features = attrs?.supported_features ?? 0;
+                const featureMap = [
+                    [1, "arm_home"],
+                    [2, "arm_away"],
+                    [8, "arm_night"],
+                    [16, "arm_vacation"],
+                    [32, "arm_custom_bypass"],
+                ];
+                const modes = featureMap
+                    .filter(([bit]) => features & bit)
+                    .map(([, mode]) => mode);
+                return modes.length > 0 ? modes : [...ALARM_MODES];
+            }
+        }
+        // Fallback to full known list
+        return this.modeType === "climate" ? [...CLIMATE_MODES] : [...ALARM_MODES];
+    }
+    _toggle(mode) {
+        const current = this.value || [];
+        const updated = current.includes(mode)
+            ? current.filter((m) => m !== mode)
+            : [...current, mode];
+        this._fireChanged(updated.length > 0 ? updated : undefined);
+    }
+    _addCustom() {
+        const mode = this._customInput.trim();
+        if (!mode)
+            return;
+        const current = this.value || [];
+        if (!current.includes(mode)) {
+            this._fireChanged([...current, mode]);
+        }
+        this._customInput = "";
+    }
+    _fireChanged(value) {
+        this.dispatchEvent(new CustomEvent("value-changed", {
+            detail: { value },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        const available = this._getAvailableModes();
+        const selected = this.value || [];
+        // Modes in value that aren't in the available list (e.g., entity changed)
+        const extraModes = selected.filter((m) => !available.includes(m));
+        const entityFound = !!(this.entity && this.hass?.states?.[this.entity]);
+        return b `
+      <div class="mode-picker">
+        <label class="picker-label">${this.label}</label>
+        ${!this.entity
+            ? b `<p class="hint">Select an entity to see its supported modes</p>`
+            : !entityFound
+                ? b `<p class="hint">Entity not found in HA — showing all known modes</p>`
+                : ""}
+        <div class="chips">
+          ${available.map((mode) => b `
+              <button
+                class="chip ${selected.includes(mode) ? "selected" : ""}"
+                @click=${() => this._toggle(mode)}
+              >
+                ${this._formatMode(mode)}
+              </button>
+            `)}
+          ${extraModes.map((mode) => b `
+              <button
+                class="chip selected unavailable"
+                @click=${() => this._toggle(mode)}
+                title="Not available on selected entity"
+              >
+                ${this._formatMode(mode)} ⚠
+              </button>
+            `)}
+        </div>
+        <div class="custom-row">
+          <input
+            type="text"
+            placeholder="Custom mode…"
+            .value=${this._customInput}
+            @input=${(e) => {
+            this._customInput = e.target.value;
+        }}
+            @keydown=${(e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                this._addCustom();
+            }
+        }}
+          />
+          <button class="btn-add" @click=${this._addCustom}>+</button>
+        </div>
+      </div>
+    `;
+    }
+    _formatMode(mode) {
+        return mode.replace(/_/g, " ");
+    }
+};
+NspModePicker.styles = i$3 `
+    :host {
+      display: block;
+    }
+    .mode-picker {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .picker-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    .hint {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--secondary-text-color);
+      margin: 0;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip {
+      padding: 4px 12px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 16px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 13px;
+      cursor: pointer;
+      text-transform: capitalize;
+      transition: all 0.15s ease;
+    }
+    .chip:hover {
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .chip.selected {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .chip.unavailable {
+      background: var(--warning-color, #ffa726);
+      border-color: var(--warning-color, #ffa726);
+      opacity: 0.85;
+    }
+    .custom-row {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .custom-row input {
+      flex: 1;
+      padding: 4px 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 13px;
+    }
+    .custom-row input:focus {
+      outline: none;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .btn-add {
+      padding: 4px 10px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--primary-color, #03a9f4);
+    }
+    .btn-add:hover {
+      background: var(--secondary-background-color, #f5f5f5);
+    }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspModePicker.prototype, "hass", void 0);
+__decorate([
+    n({ type: String })
+], NspModePicker.prototype, "entity", void 0);
+__decorate([
+    n({ type: Array })
+], NspModePicker.prototype, "value", void 0);
+__decorate([
+    n({ type: String })
+], NspModePicker.prototype, "modeType", void 0);
+__decorate([
+    n({ type: String })
+], NspModePicker.prototype, "label", void 0);
+__decorate([
+    r()
+], NspModePicker.prototype, "_customInput", void 0);
+NspModePicker = __decorate([
+    t("nsp-mode-picker")
+], NspModePicker);
+
 let NspCardEditor = class NspCardEditor extends i {
     constructor() {
         super(...arguments);
@@ -1514,12 +1739,14 @@ let NspCardEditor = class NspCardEditor extends i {
         </div>
       </div>
       <div class="field">
-        <label>Supported Modes (comma-separated)</label>
-        <input type="text" .value=${(card.supportedModes || []).join(", ")}
-          @input=${(e) => {
-            const val = e.target.value;
-            this._updateField("supportedModes", val ? val.split(",").map((s) => s.trim()) : undefined);
-        }} />
+        <nsp-mode-picker
+          .hass=${this.hass}
+          .entity=${card.entity || ""}
+          .value=${card.supportedModes || []}
+          .modeType=${"climate"}
+          label="Supported Modes"
+          @value-changed=${(e) => this._updateField("supportedModes", e.detail.value)}
+        ></nsp-mode-picker>
       </div>
     `;
     }
@@ -1556,12 +1783,14 @@ let NspCardEditor = class NspCardEditor extends i {
         ></nsp-entity-picker>
       </div>
       <div class="field">
-        <label>Supported Modes (comma-separated)</label>
-        <input type="text" .value=${(card.supportedModes || []).join(", ")}
-          @input=${(e) => {
-            const val = e.target.value;
-            this._updateField("supportedModes", val ? val.split(",").map((s) => s.trim()) : undefined);
-        }} />
+        <nsp-mode-picker
+          .hass=${this.hass}
+          .entity=${card.entity || ""}
+          .value=${card.supportedModes || []}
+          .modeType=${"alarm"}
+          label="Supported Modes"
+          @value-changed=${(e) => this._updateField("supportedModes", e.detail.value)}
+        ></nsp-mode-picker>
       </div>
       <details class="advanced-section">
         <summary>alarmControl Override</summary>

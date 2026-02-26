@@ -38,6 +38,14 @@ export type BackgroundColor = (typeof BACKGROUND_COLORS)[number];
 
 export const SCREENSAVER_TYPES = ["screensaver", "screensaver2"] as const;
 
+export const CLIMATE_MODES = [
+  "off", "heat", "cool", "auto", "dry", "fan_only",
+] as const;
+
+export const ALARM_MODES = [
+  "arm_home", "arm_away", "arm_night", "arm_vacation", "arm_custom_bypass",
+] as const;
+
 export const LOCALES: [string, string][] = [
   ["af_ZA", "Afrikaans"],
   ["ar_SY", "Arabic"],
