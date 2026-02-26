@@ -4,14 +4,17 @@ import type { HomeAssistant, PanelData, PanelConfig, CardConfig } from "../model
 import "./settings-editor";
 import "./card-list";
 import "./yaml-preview";
+import "./screensaver-editor";
+import "./notification-editor";
 
-type EditorTab = "settings" | "cards" | "hiddenCards" | "screensaver" | "yaml";
+type EditorTab = "settings" | "cards" | "hiddenCards" | "screensaver" | "notifications" | "yaml";
 
 const TAB_LABELS: Record<EditorTab, string> = {
   settings: "Settings",
   cards: "Cards",
   hiddenCards: "Hidden Cards",
   screensaver: "Screensaver",
+  notifications: "Notifications",
   yaml: "YAML Preview",
 };
 
@@ -112,9 +115,22 @@ export class NspPanelEditor extends LitElement {
     this._dirty = true;
   }
 
+  private _onScreensaverChanged(e: CustomEvent) {
+    if (!this._data) return;
+    this._data = { ...this._data, screensaver: e.detail.screensaver };
+    this._dirty = true;
+  }
+
   private _getHiddenCardKeys(): string[] {
     if (!this._data) return [];
     return this._data.hiddenCards
+      .map((c) => c.key)
+      .filter((k): k is string => !!k);
+  }
+
+  private _getCardKeys(): string[] {
+    if (!this._data) return [];
+    return [...this._data.cards, ...this._data.hiddenCards]
       .map((c) => c.key)
       .filter((k): k is string => !!k);
   }
@@ -199,25 +215,23 @@ export class NspPanelEditor extends LitElement {
           ></nsp-card-list>
         `;
       case "screensaver":
-        return this._renderScreensaverReadonly();
+        return html`
+          <nsp-screensaver-editor
+            .hass=${this.hass}
+            .screensaver=${this._data.screensaver}
+            .cardKeys=${this._getCardKeys()}
+            @screensaver-changed=${this._onScreensaverChanged}
+          ></nsp-screensaver-editor>
+        `;
+      case "notifications":
+        return html`
+          <nsp-notification-editor></nsp-notification-editor>
+        `;
       case "yaml":
         return html`
           <nsp-yaml-preview .hass=${this.hass}></nsp-yaml-preview>
         `;
     }
-  }
-
-  private _renderScreensaverReadonly() {
-    const sc = this._data?.screensaver;
-    if (!sc || Object.keys(sc).length === 0) {
-      return html`<p class="empty">No screensaver configured. Full screensaver editor coming in a future update.</p>`;
-    }
-    return html`
-      <div class="screensaver-readonly">
-        <p class="hint">Screensaver config (read-only). Full editor coming in a future update.</p>
-        <pre><code>${JSON.stringify(sc, null, 2)}</code></pre>
-      </div>
-    `;
   }
 
   static styles = css`
@@ -305,8 +319,6 @@ export class NspPanelEditor extends LitElement {
       box-sizing: border-box;
     }
     .empty { text-align: center; color: var(--secondary-text-color); padding: 32px; }
-    .screensaver-readonly { display: flex; flex-direction: column; gap: 8px; }
-    .hint { color: var(--secondary-text-color); font-size: 13px; font-style: italic; margin: 0; }
     pre {
       background: var(--card-background-color, white);
       border: 1px solid var(--divider-color, #e0e0e0);

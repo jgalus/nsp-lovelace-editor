@@ -255,6 +255,22 @@ export class NspCardEditor extends LitElement {
             this._updateField("supportedModes", val ? val.split(",").map((s: string) => s.trim()) : undefined);
           }} />
       </div>
+      <details class="advanced-section">
+        <summary>alarmControl Override</summary>
+        <div class="field">
+          <label>alarmControl JSON (custom action for bottom-left icon)</label>
+          <textarea rows="4"
+            .value=${card.alarmControl ? JSON.stringify(card.alarmControl, null, 2) : ""}
+            placeholder='{"entity": "script.my_alarm_action", "icon": "mdi:alarm-light"}'
+            @change=${(e: Event) => {
+              try {
+                const raw = (e.target as HTMLTextAreaElement).value.trim();
+                const data = raw ? JSON.parse(raw) : undefined;
+                this._updateField("alarmControl", data && Object.keys(data).length ? data : undefined);
+              } catch { /* ignore invalid JSON */ }
+            }}></textarea>
+        </div>
+      </details>
     `;
   }
 
@@ -281,6 +297,7 @@ export class NspCardEditor extends LitElement {
             this._updateField("cooldown", v ? Number(v) : undefined);
           }} />
       </div>
+      <p class="hint">💡 First 2 entities appear in the center; remaining entities are placed on the periphery.</p>
       ${this._renderEntityList()}
     `;
   }
@@ -329,6 +346,11 @@ export class NspCardEditor extends LitElement {
     details.nav-items summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--secondary-text-color); padding: 4px 0; }
     details.nav-items[open] summary { margin-bottom: 12px; }
     details.nav-items { border-top: 1px solid var(--divider-color); padding-top: 8px; }
+    details.advanced-section { border-top: 1px solid var(--divider-color); padding-top: 8px; }
+    details.advanced-section summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--secondary-text-color); padding: 4px 0; }
+    details.advanced-section[open] summary { margin-bottom: 12px; }
+    details.advanced-section textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; background: var(--card-background-color, white); color: var(--primary-text-color); font-family: "Fira Code", "Consolas", monospace; font-size: 13px; }
+    .hint { color: var(--secondary-text-color); font-size: 12px; font-style: italic; margin: 4px 0 8px; }
   `;
 }
 
