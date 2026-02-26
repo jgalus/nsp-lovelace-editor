@@ -4,9 +4,9 @@
     "codeowners": [],
     "config_flow": true,
     "dependencies": [],
-    "documentation": "https://github.com/YOUR_USERNAME/nsp-lovelace-editor",
+    "documentation": "https://github.com/jgalus/nsp-lovelace-editor",
     "integration_type": "service",
     "iot_class": "local_push",
-    "issue_tracker": "https://github.com/YOUR_USERNAME/nsp-lovelace-editor/issues",
+    "issue_tracker": "https://github.com/jgalus/nsp-lovelace-editor/issues",
     "version": "0.1.0"
 }
