@@ -22,8 +22,23 @@ def parse_appdaemon_yaml(file_path: str) -> dict[str, Any]:
         raise FileNotFoundError(f"apps.yaml not found at {file_path}")
 
     with open(path, encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
+        content = f.read()
 
+    return _extract_nspanel_entries(yaml.safe_load(content) or {})
+
+
+def parse_yaml_string(yaml_text: str) -> dict[str, Any]:
+    """Parse a YAML string and extract NSPanel entries.
+
+    Use this when direct file access is unavailable (e.g., container deployments
+    where AppDaemon runs in a separate container).
+    """
+    data = yaml.safe_load(yaml_text) or {}
+    return _extract_nspanel_entries(data)
+
+
+def _extract_nspanel_entries(data: dict[str, Any]) -> dict[str, Any]:
+    """Extract NSPanel Lovelace UI entries from parsed AppDaemon config."""
     panels: dict[str, Any] = {}
     for key, value in data.items():
         if not isinstance(value, dict):

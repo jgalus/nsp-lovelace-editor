@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant, callback
 
 from .const import CONF_APPDAEMON_PATH, DOMAIN, LOGGER
 from .storage import NsPanelStorage
-from .yaml_io import export_to_appdaemon_yaml, parse_appdaemon_yaml, write_appdaemon_yaml
+from .yaml_io import export_to_appdaemon_yaml, parse_appdaemon_yaml, parse_yaml_string, write_appdaemon_yaml
 
 
 def async_register_websocket_commands(hass: HomeAssistant) -> None:
@@ -22,6 +22,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_import_yaml)
     websocket_api.async_register_command(hass, ws_export_yaml)
     websocket_api.async_register_command(hass, ws_preview_yaml)
+    websocket_api.async_register_command(hass, ws_import_yaml_text)
 
 
 def _get_storage(hass: HomeAssistant) -> NsPanelStorage:
@@ -223,3 +224,49 @@ async def ws_preview_yaml(
         return
 
     connection.send_result(msg["id"], {"yaml": yaml_str})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "nspanel_editor/import_yaml_text",
+        vol.Required("yaml_text"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_import_yaml_text(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Import config from pasted YAML text.
+
+    Use this when direct file access to apps.yaml is unavailable,
+    e.g. in container deployments where AppDaemon runs separately.
+    """
+    try:
+        panels = await hass.async_add_executor_job(
+            parse_yaml_string, msg["yaml_text"]
+        )
+    except Exception as err:
+        LOGGER.exception("Failed to parse pasted YAML")
+        connection.send_error(msg["id"], "parse_error", str(err))
+        return
+
+    if not panels:
+        connection.send_error(
+            msg["id"],
+            "no_panels_found",
+            "No NSPanel Lovelace UI entries found in the pasted YAML. "
+            "Entries must have module: nspanel-lovelace-ui and "
+            "class: NsPanelLovelaceUIManager.",
+        )
+        return
+
+    storage = _get_storage(hass)
+    for panel_id, panel_data in panels.items():
+        await storage.async_save_panel(panel_id, panel_data)
+
+    connection.send_result(
+        msg["id"],
+        {"imported": list(panels.keys()), "count": len(panels)},
+    )

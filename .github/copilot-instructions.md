@@ -105,3 +105,18 @@ Two layouts: `screensaver` (default) and `screensaver2` (v4.0.0+). Up to 6 weath
 - Storage uses `homeassistant.helpers.storage.Store` — never write config files directly to disk except via explicit YAML export
 - YAML export preserves non-NSPanel entries in `apps.yaml` (merge, don't overwrite)
 - RGB565 conversion needed for notification colors (NSPanel uses decimal RGB565)
+
+## Deployment Mode Handling
+
+The integration must work across all HA deployment modes:
+
+| Mode | AppDaemon Location | File I/O? |
+|------|-------------------|-----------|
+| **HA OS / Green** (addon) | `/addon_configs/a0d7b954_appdaemon/apps/apps.yaml` | ✅ |
+| **HA Supervised** (addon) | Same as above | ✅ |
+| **HA Core** (direct install) | User-specified path | ✅ |
+| **HA Container** + separate AppDaemon container | Different container filesystem | ❌ |
+
+For container deployments where AppDaemon runs in a separate container, the integration provides **paste-based import** (`nspanel_editor/import_yaml_text`) and **copy-based export** (`nspanel_editor/preview_yaml`) as alternatives to direct file I/O. The visual editor and HA Storage always work regardless of deployment mode.
+
+Auto-detection paths are defined in `const.py:APPDAEMON_PATH_CANDIDATES`. The config flow warns but doesn't block if the path is unreachable.

@@ -8,6 +8,16 @@ LOGGER = logging.getLogger(__package__)
 CONF_APPDAEMON_PATH = "appdaemon_path"
 DEFAULT_APPDAEMON_PATH = "/config/appdaemon/apps/apps.yaml"
 
+# Candidate paths for auto-detecting AppDaemon apps.yaml across deployment modes
+APPDAEMON_PATH_CANDIDATES = [
+    # HA OS / Supervised addon (standard addon config path)
+    "/addon_configs/a0d7b954_appdaemon/apps/apps.yaml",
+    # HA OS / Supervised addon (legacy path)
+    "/config/appdaemon/apps/apps.yaml",
+    # Alternative HA config location
+    "/homeassistant/appdaemon/apps/apps.yaml",
+]
+
 CARD_TYPES = [
     "cardEntities",
     "cardGrid",

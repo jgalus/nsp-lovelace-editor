@@ -3,12 +3,12 @@
         "step": {
             "user": {
                 "title": "NSPanel Lovelace Editor",
-                "description": "Configure the path to your AppDaemon apps.yaml file.",
+                "description": "Configure the path to your AppDaemon apps.yaml file. For HA OS/Supervised with the AppDaemon addon, the path is auto-detected. For container deployments where AppDaemon runs separately, you can leave the default and use paste-based import instead.",
                 "data": {
                     "appdaemon_path": "AppDaemon apps.yaml path"
                 },
                 "data_description": {
-                    "appdaemon_path": "Full path to the AppDaemon apps.yaml file that contains your NSPanel Lovelace UI configuration."
+                    "appdaemon_path": "Full path to the AppDaemon apps.yaml file. Common paths: /addon_configs/a0d7b954_appdaemon/apps/apps.yaml (HA OS addon), /config/appdaemon/apps/apps.yaml (legacy). If AppDaemon runs in a separate container, this path may not be reachable — use paste-based import instead."
                 }
             }
         },

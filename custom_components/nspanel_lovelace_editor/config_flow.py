@@ -8,7 +8,7 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
-from .const import CONF_APPDAEMON_PATH, DEFAULT_APPDAEMON_PATH, DOMAIN, LOGGER
+from .const import CONF_APPDAEMON_PATH, DEFAULT_APPDAEMON_PATH, DOMAIN, LOGGER, APPDAEMON_PATH_CANDIDATES
 
 
 class NsPanelLovelaceEditorConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -36,7 +36,10 @@ class NsPanelLovelaceEditorConfigFlow(ConfigFlow, domain=DOMAIN):
 
             if not path_exists:
                 LOGGER.warning(
-                    "AppDaemon apps.yaml not found at %s, proceeding anyway",
+                    "AppDaemon apps.yaml not found at %s — "
+                    "YAML import/export will be unavailable until the path is "
+                    "corrected. You can still use paste-based import and the "
+                    "visual editor.",
                     appdaemon_path,
                 )
 
@@ -45,12 +48,9 @@ class NsPanelLovelaceEditorConfigFlow(ConfigFlow, domain=DOMAIN):
                 data={CONF_APPDAEMON_PATH: appdaemon_path},
             )
 
-        # Try to auto-detect AppDaemon path
+        # Try to auto-detect AppDaemon path across deployment modes
         default_path = DEFAULT_APPDAEMON_PATH
-        for candidate in [
-            "/config/appdaemon/apps/apps.yaml",
-            "/homeassistant/appdaemon/apps/apps.yaml",
-        ]:
+        for candidate in APPDAEMON_PATH_CANDIDATES:
             exists = await self.hass.async_add_executor_job(Path(candidate).is_file)
             if exists:
                 default_path = candidate
