@@ -74,8 +74,9 @@ export class NspCardEditor extends LitElement {
         </div>
         <div class="field">
           <label>Key</label>
-          <input type="text" .value=${this.card.key || ""}
+          <input type="text" .value=${this.card.key || ""} placeholder="e.g. lights, climate"
             @input=${(e: Event) => this._updateField("key", (e.target as HTMLInputElement).value)} />
+          <small>Unique identifier used by <code>navigate.&lt;key&gt;</code> entities and as the screensaver's default card</small>
         </div>
       </div>
     `;
@@ -356,6 +357,8 @@ export class NspCardEditor extends LitElement {
     details.advanced-section[open] summary { margin-bottom: 12px; }
     details.advanced-section textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; background: var(--card-background-color, white); color: var(--primary-text-color); font-family: "Fira Code", "Consolas", monospace; font-size: 13px; }
     .hint { color: var(--secondary-text-color); font-size: 12px; font-style: italic; margin: 4px 0 8px; }
+    small { color: var(--secondary-text-color); font-size: 11px; }
+    small code { font-family: "Fira Code", "Consolas", monospace; font-size: 11px; }
   `;
 }
 

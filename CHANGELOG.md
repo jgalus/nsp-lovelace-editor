@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.2 — 2026-02-26
+
+### Improved
+
+- **Key field helper text** — Added placeholder and descriptive hint to the card
+  Key input field explaining that keys are used by `navigate.<key>` entities for
+  subpage navigation and as the screensaver's default card reference.
+
 ## 0.4.1 — 2026-02-26
 
 ### Improved
