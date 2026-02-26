@@ -115,8 +115,11 @@ The integration must work across all HA deployment modes:
 | **HA OS / Green** (addon) | `/addon_configs/a0d7b954_appdaemon/apps/apps.yaml` | ✅ |
 | **HA Supervised** (addon) | Same as above | ✅ |
 | **HA Core** (direct install) | User-specified path | ✅ |
-| **HA Container** + separate AppDaemon container | Different container filesystem | ❌ |
+| **HA Container** + AppDaemon volume-mounted to HA config dir | `/config/appdaemon/apps/apps.yaml` (shared volume) | ✅ |
+| **HA Container** + fully separate AppDaemon container | Different container filesystem, no shared volume | ❌ |
 
-For container deployments where AppDaemon runs in a separate container, the integration provides **paste-based import** (`nspanel_editor/import_yaml_text`) and **copy-based export** (`nspanel_editor/preview_yaml`) as alternatives to direct file I/O. The visual editor and HA Storage always work regardless of deployment mode.
+The common container setup mounts AppDaemon's config into the HA config directory (e.g., `-v /path/to/appdaemon:/config/appdaemon`), making the file accessible. This path is included in auto-detection.
+
+For container deployments where AppDaemon runs in a separate container **without** a shared volume, the integration provides **paste-based import** (`nspanel_editor/import_yaml_text`) and **copy-based export** (`nspanel_editor/preview_yaml`) as alternatives to direct file I/O. The visual editor and HA Storage always work regardless of deployment mode.
 
 Auto-detection paths are defined in `const.py:APPDAEMON_PATH_CANDIDATES`. The config flow warns but doesn't block if the path is unreachable.

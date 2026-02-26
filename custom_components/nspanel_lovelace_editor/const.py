@@ -14,8 +14,11 @@ APPDAEMON_PATH_CANDIDATES = [
     "/addon_configs/a0d7b954_appdaemon/apps/apps.yaml",
     # HA OS / Supervised addon (legacy path)
     "/config/appdaemon/apps/apps.yaml",
+    # Container deployment with AppDaemon volume-mounted into HA config dir
+    "/config/appdaemon/apps.yaml",
     # Alternative HA config location
     "/homeassistant/appdaemon/apps/apps.yaml",
+    "/homeassistant/appdaemon/apps.yaml",
 ]
 
 CARD_TYPES = [

@@ -8,7 +8,7 @@
                     "appdaemon_path": "AppDaemon apps.yaml path"
                 },
                 "data_description": {
-                    "appdaemon_path": "Full path to the AppDaemon apps.yaml file. Common paths: /addon_configs/a0d7b954_appdaemon/apps/apps.yaml (HA OS addon), /config/appdaemon/apps/apps.yaml (legacy). If AppDaemon runs in a separate container, this path may not be reachable — use paste-based import instead."
+                    "appdaemon_path": "Full path to the AppDaemon apps.yaml file. Common paths: /addon_configs/a0d7b954_appdaemon/apps/apps.yaml (HA OS addon), /config/appdaemon/apps/apps.yaml (legacy addon or container with shared volume). If AppDaemon runs in a separate container without a shared volume mount, this path may not be reachable — use paste-based import instead."
                 }
             }
         },
