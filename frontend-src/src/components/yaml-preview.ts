@@ -1,6 +1,60 @@
 import { LitElement, html, css } from "lit";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "../models/types";
+
+/** Minimal YAML syntax highlighter — no external dependencies. */
+function highlightYaml(yaml: string): string {
+  return yaml
+    .split("\n")
+    .map((raw) => {
+      // Escape HTML entities first
+      const line = raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Comment line
+      if (/^\s*#/.test(line)) {
+        return `<span class="y-comment">${line}</span>`;
+      }
+
+      // List item prefix: "  - " — highlight the dash separately
+      const listMatch = line.match(/^(\s*-\s+)(.*)$/);
+      if (listMatch) {
+        const [, prefix, rest] = listMatch;
+        return `<span class="y-list-dash">${prefix}</span>${colorizeValue(rest)}`;
+      }
+
+      // Key: value
+      const kvMatch = line.match(/^(\s*)([^:]+?)(\s*:\s*)(.*)$/);
+      if (kvMatch) {
+        const [, indent, key, sep, value] = kvMatch;
+        return `${indent}<span class="y-key">${key}</span>${sep}${colorizeValue(value)}`;
+      }
+
+      return line;
+    })
+    .join("\n");
+}
+
+function colorizeValue(value: string): string {
+  if (!value) return value;
+  // Quoted string
+  if (/^["'].*["']$/.test(value)) return `<span class="y-string">${value}</span>`;
+  // Number
+  if (/^-?\d+(\.\d+)?$/.test(value)) return `<span class="y-number">${value}</span>`;
+  // Boolean / null
+  if (/^(true|false|yes|no|null|~)$/i.test(value)) return `<span class="y-bool">${value}</span>`;
+  // Inline comment
+  const commentIdx = value.indexOf(" #");
+  if (commentIdx !== -1) {
+    const v = value.slice(0, commentIdx);
+    const c = value.slice(commentIdx);
+    return `${colorizeValue(v)}<span class="y-comment">${c}</span>`;
+  }
+  return `<span class="y-value">${value}</span>`;
+}
 
 @customElement("nsp-yaml-preview")
 export class NspYamlPreview extends LitElement {
@@ -97,7 +151,7 @@ export class NspYamlPreview extends LitElement {
               </div>
             `
           : ""}
-        <pre><code>${this._yaml}</code></pre>
+        <pre><code>${unsafeHTML(highlightYaml(this._yaml))}</code></pre>
       </div>
     `;
   }
@@ -167,6 +221,22 @@ export class NspYamlPreview extends LitElement {
       word-break: break-word;
     }
     code { font-family: "Fira Code", "Consolas", monospace; color: var(--primary-text-color); }
+    /* YAML syntax highlight tokens */
+    .y-key { color: #0d47a1; }
+    .y-string { color: #2e7d32; }
+    .y-number { color: #6a1b9a; }
+    .y-bool { color: #e65100; }
+    .y-comment { color: #78909c; font-style: italic; }
+    .y-list-dash { color: #c62828; }
+    .y-value { color: var(--primary-text-color); }
+    @media (prefers-color-scheme: dark) {
+      .y-key { color: #90caf9; }
+      .y-string { color: #a5d6a7; }
+      .y-number { color: #ce93d8; }
+      .y-bool { color: #ffcc80; }
+      .y-comment { color: #90a4ae; }
+      .y-list-dash { color: #ef9a9a; }
+    }
     .loading { text-align: center; padding: 32px; color: var(--secondary-text-color); }
     .error {
       background: var(--error-color, #db4437);

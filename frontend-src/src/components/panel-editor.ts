@@ -27,11 +27,14 @@ export class NspPanelEditor extends LitElement {
   @state() private _activeTab: EditorTab = "settings";
   @state() private _loading = true;
   @state() private _saving = false;
+  @state() private _saveError: string | null = null;
   @state() private _error: string | null = null;
   @state() private _dirty = false;
   @state() private _saveSuccess = false;
   @state() private _exporting = false;
   @state() private _exportStatus: { type: "success" | "error"; message: string } | null = null;
+  @state() private _confirmDelete = false;
+  @state() private _confirmBack = false;
 
   async connectedCallback() {
     super.connectedCallback();
@@ -62,6 +65,7 @@ export class NspPanelEditor extends LitElement {
   private async _savePanel() {
     if (!this._data) return;
     this._saving = true;
+    this._saveError = null;
     try {
       await this.hass.callWS({
         type: "nspanel_editor/save_panel",
@@ -76,7 +80,7 @@ export class NspPanelEditor extends LitElement {
       this._exportStatus = null;
       setTimeout(() => { this._saveSuccess = false; }, 15000);
     } catch (err: any) {
-      alert(`Save failed: ${err.message}`);
+      this._saveError = err.message || "Save failed";
     }
     this._saving = false;
   }
@@ -112,15 +116,16 @@ export class NspPanelEditor extends LitElement {
   }
 
   private async _deletePanel() {
-    if (!confirm(`Delete panel "${this.panelId}"? This cannot be undone.`)) return;
     try {
       await this.hass.callWS({
         type: "nspanel_editor/delete_panel",
         panel_id: this.panelId,
       });
+      this._confirmDelete = false;
       this._fireBack();
     } catch (err: any) {
-      alert(`Delete failed: ${err.message}`);
+      this._confirmDelete = false;
+      this._exportStatus = { type: "error", message: err.message || "Delete failed" };
     }
   }
 
@@ -129,8 +134,11 @@ export class NspPanelEditor extends LitElement {
   }
 
   private _handleBack() {
-    if (this._dirty && !confirm("You have unsaved changes. Discard and go back?")) return;
-    this._fireBack();
+    if (this._dirty) {
+      this._confirmBack = true;
+    } else {
+      this._fireBack();
+    }
   }
 
   private _onConfigChanged(e: CustomEvent) {
@@ -192,11 +200,38 @@ export class NspPanelEditor extends LitElement {
           <h2>${this.panelId}</h2>
           ${this._dirty ? html`<span class="dirty-badge">Unsaved</span>` : ""}
           <span class="spacer"></span>
-          <button class="btn btn-danger" @click=${this._deletePanel}>Delete Panel</button>
-          <button class="btn btn-primary" ?disabled=${this._saving} @click=${this._savePanel}>
-            ${this._saving ? "Saving..." : "Save"}
-          </button>
+          ${this._confirmDelete
+            ? html`
+                <span class="confirm-text">Delete "${this.panelId}"?</span>
+                <button class="btn btn-danger" @click=${this._deletePanel}>Confirm Delete</button>
+                <button class="btn" @click=${() => { this._confirmDelete = false; }}>Cancel</button>
+              `
+            : html`
+                <button class="btn btn-danger" @click=${() => { this._confirmDelete = true; }}>Delete Panel</button>
+                <button class="btn btn-primary" ?disabled=${this._saving} @click=${this._savePanel}>
+                  ${this._saving ? "Saving…" : "Save"}
+                </button>
+              `}
         </div>
+
+        ${this._confirmBack
+          ? html`
+              <div class="warn-banner">
+                <span>You have unsaved changes. Discard and go back?</span>
+                <button class="btn-warn-action" @click=${() => { this._confirmBack = false; this._fireBack(); }}>Discard &amp; Go Back</button>
+                <button class="btn-warn-cancel" @click=${() => { this._confirmBack = false; }}>Keep Editing</button>
+              </div>
+            `
+          : ""}
+
+        ${this._saveError
+          ? html`
+              <div class="status-banner error">
+                Save failed: ${this._saveError}
+                <button class="dismiss" @click=${() => { this._saveError = null; }}>&times;</button>
+              </div>
+            `
+          : ""}
 
         ${this._saveSuccess
           ? html`
@@ -422,6 +457,43 @@ export class NspPanelEditor extends LitElement {
       padding: 0;
       margin-left: auto;
       line-height: 1;
+    }
+    .confirm-text {
+      font-size: 14px;
+      color: var(--error-color, #db4437);
+      white-space: nowrap;
+    }
+    .warn-banner {
+      background: var(--warning-color, #ffa726);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+    .btn-warn-action {
+      padding: 4px 12px;
+      border: 1px solid white;
+      border-radius: 4px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .btn-warn-action:hover { background: rgba(255, 255, 255, 0.2); }
+    .btn-warn-cancel {
+      padding: 4px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
     }
     pre {
       background: var(--card-background-color, white);
