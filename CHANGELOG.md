@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1 — 2026-02-26
+
+### Improved
+
+- **Conditional display UX** — Reworked the entity conditional visibility
+  section for clarity. Renamed section from "Conditional Visibility" to
+  "Conditional Display" and field label from "Visibility template" to "Condition
+  template". Replaced jargon placeholder "Jinja2 template → truthy/falsy" with
+  an actual example template. Added descriptive help text under all three fields
+  explaining their behavior, including the counterintuitive "entity is hidden
+  when template evaluates to true" semantics. Added example placeholders to the
+  state match fields.
+
 ## 0.4.0 — 2026-02-26
 
 ### Added

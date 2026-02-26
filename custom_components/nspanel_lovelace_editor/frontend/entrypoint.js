@@ -1263,21 +1263,24 @@ let NspEntityEditor = class NspEntityEditor extends i {
     _renderConditionalVisibility() {
         return b `
       <details class="advanced">
-        <summary>Conditional Visibility</summary>
+        <summary>Conditional Display</summary>
         <div class="field">
           <label>Show when state equals</label>
-          <input type="text" .value=${this.entity.state || ""}
+          <input type="text" .value=${this.entity.state || ""} placeholder="e.g. on, home, playing"
             @input=${(e) => this._updateField("state", e.target.value)} />
+          <small>Entity is only shown when its state equals this value</small>
         </div>
         <div class="field">
           <label>Hide when state equals</label>
-          <input type="text" .value=${this.entity.state_not || ""}
+          <input type="text" .value=${this.entity.state_not || ""} placeholder="e.g. off, unavailable"
             @input=${(e) => this._updateField("state_not", e.target.value)} />
+          <small>Entity is only shown when its state does NOT equal this value</small>
         </div>
         <div class="field">
-          <label>Visibility template</label>
-          <input type="text" .value=${this.entity.state_template || ""} placeholder="Jinja2 template → truthy/falsy"
+          <label>Condition template</label>
+          <input type="text" .value=${this.entity.state_template || ""} placeholder="{{ states('sensor.example') == 'on' }}"
             @input=${(e) => this._updateField("state_template", e.target.value)} />
+          <small>Jinja2 template — entity is hidden when this evaluates to true</small>
         </div>
       </details>
     `;
