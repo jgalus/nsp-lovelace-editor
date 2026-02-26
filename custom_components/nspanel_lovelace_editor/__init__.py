@@ -4,6 +4,7 @@ For more details about this integration, please refer to the documentation.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,6 +16,8 @@ from homeassistant.helpers import config_validation as cv
 from .const import CONF_APPDAEMON_PATH, DOMAIN, LOGGER, NAME
 from .storage import NsPanelStorage
 from .websocket_api import async_register_websocket_commands
+
+_MANIFEST_PATH = Path(__file__).parent / "manifest.json"
 
 try:
     from homeassistant.components.http import StaticPathConfig
@@ -68,6 +71,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     elif hasattr(hass.http, "register_static_path"):
         hass.http.register_static_path(url_path, str(frontend_path), False)
 
+    # Read version from manifest.json for cache busting
+    try:
+        version = json.loads(_MANIFEST_PATH.read_text())["version"]
+    except Exception:
+        version = "0"
+
     # Register sidebar panel
     frontend.async_register_built_in_panel(
         hass,
@@ -79,7 +88,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "name": "nspanel-lovelace-editor",
             "embed_iframe": False,
             "trust_external": False,
-            "js_url": f"{url_path}/entrypoint.js",
+            "js_url": f"{url_path}/entrypoint.js?v={version}",
         }},
         require_admin=True,
     )

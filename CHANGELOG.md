@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2 — 2026-02-26
+
+### Fixed
+
+- **Frontend cache busting** — The browser was serving cached v0.2.0 JS after
+  upgrading because the `js_url` had no version parameter. The `entrypoint.js`
+  URL now includes `?v={version}` read from `manifest.json`, forcing browsers
+  to fetch the new file on every version bump.
+
 ## 0.2.1 — 2026-02-26
 
 ### Fixed
