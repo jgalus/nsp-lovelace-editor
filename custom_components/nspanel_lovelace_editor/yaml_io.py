@@ -1,6 +1,8 @@
 """YAML import/export for NSPanel Lovelace UI AppDaemon configuration."""
 from __future__ import annotations
 
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +12,18 @@ from .const import LOGGER
 
 NSPANEL_MODULE = "nspanel-lovelace-ui"
 NSPANEL_CLASS = "NsPanelLovelaceUIManager"
+
+
+class YamlWriteError(Exception):
+    """Base exception for YAML write failures."""
+
+
+class YamlPermissionError(YamlWriteError):
+    """Raised when the process lacks permission to write the YAML file."""
+
+
+class YamlVerificationError(YamlWriteError):
+    """Raised when the written file fails post-write verification."""
 
 
 def parse_appdaemon_yaml(file_path: str) -> dict[str, Any]:
@@ -112,10 +126,137 @@ def export_to_appdaemon_yaml(
 
 
 def write_appdaemon_yaml(file_path: str, panels: dict[str, Any]) -> None:
-    """Write the exported YAML to the apps.yaml file."""
-    yaml_str = export_to_appdaemon_yaml(file_path, panels)
+    """Write the exported YAML to the apps.yaml file.
+
+    Uses atomic write (temp file + rename) with pre-write permission checks
+    and post-write verification.
+
+    Raises:
+        YamlPermissionError: If the process lacks write access.
+        YamlVerificationError: If the written file fails read-back verification.
+        OSError: For other I/O failures (disk full, etc.).
+    """
     path = Path(file_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(yaml_str)
+
+    # Pre-write permission checks
+    _check_write_permissions(path)
+
+    yaml_str = export_to_appdaemon_yaml(file_path, panels)
+
+    # Atomic write: write to temp file in same directory, then rename
+    parent = path.parent
+    try:
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(parent), prefix=".apps_yaml_", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(yaml_str)
+                f.flush()
+                os.fsync(f.fileno())
+        except Exception:
+            # Clean up temp file on write failure
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
+
+        os.replace(tmp_path, str(path))
+    except PermissionError as err:
+        raise YamlPermissionError(
+            f"Permission denied writing to {file_path}. "
+            "Ensure the Home Assistant process has write access to the "
+            "AppDaemon configuration directory. In container setups, check "
+            "that the volume is mounted with write permissions."
+        ) from err
+
+    # Post-write verification: read back and confirm valid YAML with entries
+    _verify_written_file(path, panels)
+
     LOGGER.info("Exported NSPanel config to %s", file_path)
+
+
+def check_yaml_path(file_path: str) -> dict[str, Any]:
+    """Check accessibility of the apps.yaml path.
+
+    Returns a dict with keys: exists, readable, writable, parent_writable, error.
+    """
+    path = Path(file_path)
+    result: dict[str, Any] = {
+        "path": file_path,
+        "exists": False,
+        "readable": False,
+        "writable": False,
+        "parent_writable": False,
+        "error": None,
+    }
+
+    try:
+        result["exists"] = path.is_file()
+        if result["exists"]:
+            result["readable"] = os.access(str(path), os.R_OK)
+            result["writable"] = os.access(str(path), os.W_OK)
+        result["parent_writable"] = (
+            path.parent.is_dir() and os.access(str(path.parent), os.W_OK)
+        )
+    except OSError as err:
+        result["error"] = str(err)
+
+    return result
+
+
+def _check_write_permissions(path: Path) -> None:
+    """Raise YamlPermissionError if the path is not writable."""
+    parent = path.parent
+    if not parent.is_dir():
+        raise YamlPermissionError(
+            f"Directory {parent} does not exist. "
+            "Check the configured AppDaemon apps.yaml path."
+        )
+    if not os.access(str(parent), os.W_OK):
+        raise YamlPermissionError(
+            f"No write permission on directory {parent}. "
+            "In container setups, ensure the AppDaemon config volume "
+            "is mounted with write permissions."
+        )
+    if path.is_file() and not os.access(str(path), os.W_OK):
+        raise YamlPermissionError(
+            f"No write permission on {path}. "
+            "Check file ownership and permissions."
+        )
+
+
+def _verify_written_file(path: Path, panels: dict[str, Any]) -> None:
+    """Read back the written file and verify it contains valid YAML."""
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError as err:
+        raise YamlVerificationError(
+            f"Failed to read back {path} after writing: {err}"
+        ) from err
+
+    if not content.strip():
+        raise YamlVerificationError(
+            f"Written file {path} is empty after export."
+        )
+
+    try:
+        data = yaml.safe_load(content)
+    except yaml.YAMLError as err:
+        raise YamlVerificationError(
+            f"Written file {path} contains invalid YAML: {err}"
+        ) from err
+
+    if not isinstance(data, dict):
+        raise YamlVerificationError(
+            f"Written file {path} does not contain a YAML mapping."
+        )
+
+    # Verify expected NSPanel entries are present
+    for panel_id in panels:
+        if panel_id not in data:
+            raise YamlVerificationError(
+                f"Verification failed: panel '{panel_id}' missing from "
+                f"written file {path}."
+            )

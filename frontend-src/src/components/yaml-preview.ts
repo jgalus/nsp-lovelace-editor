@@ -10,6 +10,8 @@ export class NspYamlPreview extends LitElement {
   @state() private _loading = true;
   @state() private _error: string | null = null;
   @state() private _copied = false;
+  @state() private _exporting = false;
+  @state() private _exportStatus: { type: "success" | "error"; message: string } | null = null;
 
   async connectedCallback() {
     super.connectedCallback();
@@ -46,6 +48,37 @@ export class NspYamlPreview extends LitElement {
     }
   }
 
+  private async _exportToFile() {
+    this._exporting = true;
+    this._exportStatus = null;
+    try {
+      const result = await this.hass.callWS({ type: "nspanel_editor/export_yaml" });
+      this._exportStatus = {
+        type: "success",
+        message: `Exported ${result.count} panel(s) to apps.yaml: ${result.exported.join(", ")}`,
+      };
+      setTimeout(() => { this._exportStatus = null; }, 10000);
+    } catch (err: any) {
+      const code = err.code || "";
+      let hint = "";
+      if (code === "permission_denied") {
+        hint =
+          " Check that the Home Assistant process has write access to the " +
+          "AppDaemon configuration directory. In container setups, ensure the " +
+          "volume is mounted with write permissions.";
+      } else if (code === "verification_failed") {
+        hint = " The file was written but could not be verified. Check disk space and file integrity.";
+      } else if (code === "not_configured") {
+        hint = " Configure the AppDaemon apps.yaml path in the integration settings.";
+      }
+      this._exportStatus = {
+        type: "error",
+        message: (err.message || "Export failed") + hint,
+      };
+    }
+    this._exporting = false;
+  }
+
   render() {
     if (this._loading) {
       return html`<div class="loading">Loading YAML preview...</div>`;
@@ -60,7 +93,18 @@ export class NspYamlPreview extends LitElement {
           <button class="btn btn-primary" @click=${this._copyToClipboard}>
             ${this._copied ? "Copied!" : "Copy to Clipboard"}
           </button>
+          <button class="btn btn-export" ?disabled=${this._exporting} @click=${this._exportToFile}>
+            ${this._exporting ? "Exporting..." : "Export to apps.yaml"}
+          </button>
         </div>
+        ${this._exportStatus
+          ? html`
+              <div class="status-banner ${this._exportStatus.type}">
+                ${this._exportStatus.message}
+                <button class="dismiss" @click=${() => { this._exportStatus = null; }}>&times;</button>
+              </div>
+            `
+          : ""}
         <pre><code>${this._yaml}</code></pre>
       </div>
     `;
@@ -83,6 +127,39 @@ export class NspYamlPreview extends LitElement {
       background: var(--primary-color, #03a9f4);
       color: white;
       border-color: var(--primary-color, #03a9f4);
+    }
+    .btn-export {
+      background: var(--success-color, #4caf50);
+      color: white;
+      border-color: var(--success-color, #4caf50);
+    }
+    .btn-export:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-banner {
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .status-banner.success {
+      background: var(--success-color, #4caf50);
+      color: white;
+    }
+    .status-banner.error {
+      background: var(--error-color, #db4437);
+      color: white;
+    }
+    .status-banner .dismiss {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      margin-left: auto;
+      line-height: 1;
     }
     pre {
       background: var(--card-background-color, white);

@@ -10,7 +10,16 @@ from homeassistant.core import HomeAssistant, callback
 
 from .const import CONF_APPDAEMON_PATH, DOMAIN, LOGGER
 from .storage import NsPanelStorage
-from .yaml_io import export_to_appdaemon_yaml, parse_appdaemon_yaml, parse_yaml_string, write_appdaemon_yaml
+from .yaml_io import (
+    YamlPermissionError,
+    YamlVerificationError,
+    YamlWriteError,
+    check_yaml_path,
+    export_to_appdaemon_yaml,
+    parse_appdaemon_yaml,
+    parse_yaml_string,
+    write_appdaemon_yaml,
+)
 
 
 def async_register_websocket_commands(hass: HomeAssistant) -> None:
@@ -23,6 +32,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_export_yaml)
     websocket_api.async_register_command(hass, ws_preview_yaml)
     websocket_api.async_register_command(hass, ws_import_yaml_text)
+    websocket_api.async_register_command(hass, ws_check_yaml_path)
 
 
 def _get_storage(hass: HomeAssistant) -> NsPanelStorage:
@@ -189,6 +199,30 @@ async def ws_export_yaml(
         await hass.async_add_executor_job(
             write_appdaemon_yaml, appdaemon_path, panels
         )
+    except YamlPermissionError as err:
+        LOGGER.error("Permission denied writing apps.yaml: %s", err)
+        connection.send_error(
+            msg["id"],
+            "permission_denied",
+            str(err),
+        )
+        return
+    except YamlVerificationError as err:
+        LOGGER.error("Verification failed after writing apps.yaml: %s", err)
+        connection.send_error(
+            msg["id"],
+            "verification_failed",
+            str(err),
+        )
+        return
+    except OSError as err:
+        LOGGER.exception("I/O error writing apps.yaml")
+        connection.send_error(
+            msg["id"],
+            "io_error",
+            f"I/O error writing to {appdaemon_path}: {err}",
+        )
+        return
     except Exception as err:
         LOGGER.exception("Failed to write apps.yaml")
         connection.send_error(msg["id"], "write_error", str(err))
@@ -270,3 +304,22 @@ async def ws_import_yaml_text(
         msg["id"],
         {"imported": list(panels.keys()), "count": len(panels)},
     )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "nspanel_editor/check_yaml_path"}
+)
+@websocket_api.async_response
+async def ws_check_yaml_path(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Check accessibility of the configured apps.yaml path."""
+    appdaemon_path = _get_appdaemon_path(hass)
+    if not appdaemon_path:
+        connection.send_error(msg["id"], "not_configured", "AppDaemon path not set")
+        return
+
+    result = await hass.async_add_executor_job(check_yaml_path, appdaemon_path)
+    connection.send_result(msg["id"], result)

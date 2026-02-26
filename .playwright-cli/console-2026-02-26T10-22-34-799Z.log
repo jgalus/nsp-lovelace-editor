@@ -1,0 +1,21 @@
+[ 1894894ms] 3
+[ 1894921ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/frontend_latest/61210.57226414f16be39f.js:0
+[ 1894921ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/frontend_latest/29090.18d35e3322eca686.js:0
+[ 1894921ms] [ERROR] Failure writing unhandled promise rejection to system log: TypeError: Failed to fetch dynamically imported module: http://ha.rurek.local/frontend_latest/61210.57226414f16be39f.js @ http://ha.rurek.local/frontend_latest/app.6b3133e6c6d8ae29.js:50
+[ 1896479ms] Object
+[ 1896484ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/auth/token:0
+[ 1896488ms] [ERROR] WebSocket connection to 'ws://ha.rurek.local/api/websocket' failed: Error during WebSocket handshake: Unexpected response code: 502 @ http://ha.rurek.local/frontend_latest/core.9c169bb8cc5569b5.js:0
+[ 1897503ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/auth/token:0
+[ 1897511ms] [ERROR] WebSocket connection to 'ws://ha.rurek.local/api/websocket' failed: Error during WebSocket handshake: Unexpected response code: 502 @ http://ha.rurek.local/frontend_latest/core.9c169bb8cc5569b5.js:0
+[ 1899598ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/auth/token:0
+[ 1899603ms] [ERROR] WebSocket connection to 'ws://ha.rurek.local/api/websocket' failed: Error during WebSocket handshake: Unexpected response code: 502 @ http://ha.rurek.local/frontend_latest/core.9c169bb8cc5569b5.js:0
+[ 1902619ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/auth/token:0
+[ 1902626ms] [ERROR] WebSocket connection to 'ws://ha.rurek.local/api/websocket' failed: Error during WebSocket handshake: Unexpected response code: 502 @ http://ha.rurek.local/frontend_latest/core.9c169bb8cc5569b5.js:0
+[ 1906637ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/auth/token:0
+[ 1906642ms] [ERROR] WebSocket connection to 'ws://ha.rurek.local/api/websocket' failed: Error during WebSocket handshake: Unexpected response code: 502 @ http://ha.rurek.local/frontend_latest/core.9c169bb8cc5569b5.js:0
+[ 1911659ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ http://ha.rurek.local/auth/token:0
+[ 1911668ms] [ERROR] WebSocket connection to 'ws://ha.rurek.local/api/websocket' failed: Error during WebSocket handshake: Unexpected response code: 502 @ http://ha.rurek.local/frontend_latest/core.9c169bb8cc5569b5.js:0
+[ 1916768ms] Object
+[ 1916770ms] [ERROR] Failure writing unhandled promise rejection to system log: TypeError: Failed to fetch dynamically imported module: http://ha.rurek.local/frontend_latest/61210.57226414f16be39f.js @ http://ha.rurek.local/frontend_latest/app.6b3133e6c6d8ae29.js:50
+[ 1918117ms] Identifier 'i$2' has already been declared
+[ 1918117ms] [ERROR] Failure writing uncaught error to system log: TypeError: Failed to fetch dynamically imported module: http://ha.rurek.local/frontend_latest/61210.57226414f16be39f.js @ http://ha.rurek.local/frontend_latest/app.6b3133e6c6d8ae29.js:50

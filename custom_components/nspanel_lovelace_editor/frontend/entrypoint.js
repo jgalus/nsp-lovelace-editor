@@ -1906,6 +1906,8 @@ let NspYamlPreview = class NspYamlPreview extends i {
         this._loading = true;
         this._error = null;
         this._copied = false;
+        this._exporting = false;
+        this._exportStatus = null;
     }
     async connectedCallback() {
         super.connectedCallback();
@@ -1941,6 +1943,39 @@ let NspYamlPreview = class NspYamlPreview extends i {
             setTimeout(() => { this._copied = false; }, 2000);
         }
     }
+    async _exportToFile() {
+        this._exporting = true;
+        this._exportStatus = null;
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/export_yaml" });
+            this._exportStatus = {
+                type: "success",
+                message: `Exported ${result.count} panel(s) to apps.yaml: ${result.exported.join(", ")}`,
+            };
+            setTimeout(() => { this._exportStatus = null; }, 10000);
+        }
+        catch (err) {
+            const code = err.code || "";
+            let hint = "";
+            if (code === "permission_denied") {
+                hint =
+                    " Check that the Home Assistant process has write access to the " +
+                        "AppDaemon configuration directory. In container setups, ensure the " +
+                        "volume is mounted with write permissions.";
+            }
+            else if (code === "verification_failed") {
+                hint = " The file was written but could not be verified. Check disk space and file integrity.";
+            }
+            else if (code === "not_configured") {
+                hint = " Configure the AppDaemon apps.yaml path in the integration settings.";
+            }
+            this._exportStatus = {
+                type: "error",
+                message: (err.message || "Export failed") + hint,
+            };
+        }
+        this._exporting = false;
+    }
     render() {
         if (this._loading) {
             return b `<div class="loading">Loading YAML preview...</div>`;
@@ -1955,7 +1990,18 @@ let NspYamlPreview = class NspYamlPreview extends i {
           <button class="btn btn-primary" @click=${this._copyToClipboard}>
             ${this._copied ? "Copied!" : "Copy to Clipboard"}
           </button>
+          <button class="btn btn-export" ?disabled=${this._exporting} @click=${this._exportToFile}>
+            ${this._exporting ? "Exporting..." : "Export to apps.yaml"}
+          </button>
         </div>
+        ${this._exportStatus
+            ? b `
+              <div class="status-banner ${this._exportStatus.type}">
+                ${this._exportStatus.message}
+                <button class="dismiss" @click=${() => { this._exportStatus = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
         <pre><code>${this._yaml}</code></pre>
       </div>
     `;
@@ -1978,6 +2024,39 @@ NspYamlPreview.styles = i$3 `
       background: var(--primary-color, #03a9f4);
       color: white;
       border-color: var(--primary-color, #03a9f4);
+    }
+    .btn-export {
+      background: var(--success-color, #4caf50);
+      color: white;
+      border-color: var(--success-color, #4caf50);
+    }
+    .btn-export:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-banner {
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .status-banner.success {
+      background: var(--success-color, #4caf50);
+      color: white;
+    }
+    .status-banner.error {
+      background: var(--error-color, #db4437);
+      color: white;
+    }
+    .status-banner .dismiss {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      margin-left: auto;
+      line-height: 1;
     }
     pre {
       background: var(--card-background-color, white);
@@ -2016,6 +2095,12 @@ __decorate([
 __decorate([
     r()
 ], NspYamlPreview.prototype, "_copied", void 0);
+__decorate([
+    r()
+], NspYamlPreview.prototype, "_exporting", void 0);
+__decorate([
+    r()
+], NspYamlPreview.prototype, "_exportStatus", void 0);
 NspYamlPreview = __decorate([
     t("nsp-yaml-preview")
 ], NspYamlPreview);
@@ -3140,6 +3225,9 @@ let NspPanelEditor = class NspPanelEditor extends i {
         this._saving = false;
         this._error = null;
         this._dirty = false;
+        this._saveSuccess = false;
+        this._exporting = false;
+        this._exportStatus = null;
     }
     async connectedCallback() {
         super.connectedCallback();
@@ -3180,11 +3268,45 @@ let NspPanelEditor = class NspPanelEditor extends i {
                 screensaver: this._data.screensaver,
             });
             this._dirty = false;
+            this._saveSuccess = true;
+            this._exportStatus = null;
+            setTimeout(() => { this._saveSuccess = false; }, 15000);
         }
         catch (err) {
             alert(`Save failed: ${err.message}`);
         }
         this._saving = false;
+    }
+    async _exportNow() {
+        this._exporting = true;
+        this._exportStatus = null;
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/export_yaml" });
+            this._exportStatus = {
+                type: "success",
+                message: `Exported ${result.count} panel(s) to apps.yaml`,
+            };
+            this._saveSuccess = false;
+            setTimeout(() => { this._exportStatus = null; }, 10000);
+        }
+        catch (err) {
+            const code = err.code || "";
+            let hint = "";
+            if (code === "permission_denied") {
+                hint =
+                    " Check that the Home Assistant process has write access to the " +
+                        "AppDaemon configuration directory.";
+            }
+            else if (code === "not_configured") {
+                hint = " Configure the AppDaemon apps.yaml path in the integration settings.";
+            }
+            this._exportStatus = {
+                type: "error",
+                message: (err.message || "Export failed") + hint,
+            };
+            this._saveSuccess = false;
+        }
+        this._exporting = false;
     }
     async _deletePanel() {
         if (!confirm(`Delete panel "${this.panelId}"? This cannot be undone.`))
@@ -3272,6 +3394,26 @@ let NspPanelEditor = class NspPanelEditor extends i {
             ${this._saving ? "Saving..." : "Save"}
           </button>
         </div>
+
+        ${this._saveSuccess
+            ? b `
+              <div class="info-banner">
+                <span>Save successful — don't forget to export to apps.yaml for changes to take effect in AppDaemon.</span>
+                <button class="btn btn-export-sm" ?disabled=${this._exporting} @click=${this._exportNow}>
+                  ${this._exporting ? "Exporting..." : "Export now"}
+                </button>
+                <button class="dismiss" @click=${() => { this._saveSuccess = false; }}>&times;</button>
+              </div>
+            `
+            : ""}
+        ${this._exportStatus
+            ? b `
+              <div class="status-banner ${this._exportStatus.type}">
+                ${this._exportStatus.message}
+                <button class="dismiss" @click=${() => { this._exportStatus = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
 
         <div class="tabs">
           ${Object.keys(TAB_LABELS).map((tab) => b `
@@ -3427,6 +3569,54 @@ NspPanelEditor.styles = i$3 `
       box-sizing: border-box;
     }
     .empty { text-align: center; color: var(--secondary-text-color); padding: 32px; }
+    .info-banner {
+      background: var(--info-color, #039be5);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+    .btn-export-sm {
+      padding: 4px 12px;
+      border: 1px solid white;
+      border-radius: 4px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .btn-export-sm:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-export-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-banner {
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .status-banner.success {
+      background: var(--success-color, #4caf50);
+      color: white;
+    }
+    .status-banner.error {
+      background: var(--error-color, #db4437);
+      color: white;
+    }
+    .dismiss {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      margin-left: auto;
+      line-height: 1;
+    }
     pre {
       background: var(--card-background-color, white);
       border: 1px solid var(--divider-color, #e0e0e0);
@@ -3463,6 +3653,15 @@ __decorate([
 __decorate([
     r()
 ], NspPanelEditor.prototype, "_dirty", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_saveSuccess", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_exporting", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_exportStatus", void 0);
 NspPanelEditor = __decorate([
     t("nsp-panel-editor")
 ], NspPanelEditor);

@@ -29,6 +29,9 @@ export class NspPanelEditor extends LitElement {
   @state() private _saving = false;
   @state() private _error: string | null = null;
   @state() private _dirty = false;
+  @state() private _saveSuccess = false;
+  @state() private _exporting = false;
+  @state() private _exportStatus: { type: "success" | "error"; message: string } | null = null;
 
   async connectedCallback() {
     super.connectedCallback();
@@ -69,10 +72,43 @@ export class NspPanelEditor extends LitElement {
         screensaver: this._data.screensaver,
       });
       this._dirty = false;
+      this._saveSuccess = true;
+      this._exportStatus = null;
+      setTimeout(() => { this._saveSuccess = false; }, 15000);
     } catch (err: any) {
       alert(`Save failed: ${err.message}`);
     }
     this._saving = false;
+  }
+
+  private async _exportNow() {
+    this._exporting = true;
+    this._exportStatus = null;
+    try {
+      const result = await this.hass.callWS({ type: "nspanel_editor/export_yaml" });
+      this._exportStatus = {
+        type: "success",
+        message: `Exported ${result.count} panel(s) to apps.yaml`,
+      };
+      this._saveSuccess = false;
+      setTimeout(() => { this._exportStatus = null; }, 10000);
+    } catch (err: any) {
+      const code = err.code || "";
+      let hint = "";
+      if (code === "permission_denied") {
+        hint =
+          " Check that the Home Assistant process has write access to the " +
+          "AppDaemon configuration directory.";
+      } else if (code === "not_configured") {
+        hint = " Configure the AppDaemon apps.yaml path in the integration settings.";
+      }
+      this._exportStatus = {
+        type: "error",
+        message: (err.message || "Export failed") + hint,
+      };
+      this._saveSuccess = false;
+    }
+    this._exporting = false;
   }
 
   private async _deletePanel() {
@@ -161,6 +197,26 @@ export class NspPanelEditor extends LitElement {
             ${this._saving ? "Saving..." : "Save"}
           </button>
         </div>
+
+        ${this._saveSuccess
+          ? html`
+              <div class="info-banner">
+                <span>Save successful — don't forget to export to apps.yaml for changes to take effect in AppDaemon.</span>
+                <button class="btn btn-export-sm" ?disabled=${this._exporting} @click=${this._exportNow}>
+                  ${this._exporting ? "Exporting..." : "Export now"}
+                </button>
+                <button class="dismiss" @click=${() => { this._saveSuccess = false; }}>&times;</button>
+              </div>
+            `
+          : ""}
+        ${this._exportStatus
+          ? html`
+              <div class="status-banner ${this._exportStatus.type}">
+                ${this._exportStatus.message}
+                <button class="dismiss" @click=${() => { this._exportStatus = null; }}>&times;</button>
+              </div>
+            `
+          : ""}
 
         <div class="tabs">
           ${(Object.keys(TAB_LABELS) as EditorTab[]).map(
@@ -319,6 +375,54 @@ export class NspPanelEditor extends LitElement {
       box-sizing: border-box;
     }
     .empty { text-align: center; color: var(--secondary-text-color); padding: 32px; }
+    .info-banner {
+      background: var(--info-color, #039be5);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+    .btn-export-sm {
+      padding: 4px 12px;
+      border: 1px solid white;
+      border-radius: 4px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .btn-export-sm:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-export-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-banner {
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .status-banner.success {
+      background: var(--success-color, #4caf50);
+      color: white;
+    }
+    .status-banner.error {
+      background: var(--error-color, #db4437);
+      color: white;
+    }
+    .dismiss {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      margin-left: auto;
+      line-height: 1;
+    }
     pre {
       background: var(--card-background-color, white);
       border: 1px solid var(--divider-color, #e0e0e0);
