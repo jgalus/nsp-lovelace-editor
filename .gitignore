@@ -12,6 +12,7 @@ frontend-src/dist/
 *.swo
 .env
 .venv/
+.claude/skills/
 
 # Media / screenshots
 *.png
