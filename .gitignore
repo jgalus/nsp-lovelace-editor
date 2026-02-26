@@ -12,3 +12,17 @@ frontend-src/dist/
 *.swo
 .env
 .venv/
+
+# Media / screenshots
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.svg
+*.ico
+*.webp
+*.mp4
+*.mov
+*.avi
+*.webm
