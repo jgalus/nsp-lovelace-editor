@@ -1563,6 +1563,23 @@ let NspCardEditor = class NspCardEditor extends i {
             this._updateField("supportedModes", val ? val.split(",").map((s) => s.trim()) : undefined);
         }} />
       </div>
+      <details class="advanced-section">
+        <summary>alarmControl Override</summary>
+        <div class="field">
+          <label>alarmControl JSON (custom action for bottom-left icon)</label>
+          <textarea rows="4"
+            .value=${card.alarmControl ? JSON.stringify(card.alarmControl, null, 2) : ""}
+            placeholder='{"entity": "script.my_alarm_action", "icon": "mdi:alarm-light"}'
+            @change=${(e) => {
+            try {
+                const raw = e.target.value.trim();
+                const data = raw ? JSON.parse(raw) : undefined;
+                this._updateField("alarmControl", data && Object.keys(data).length ? data : undefined);
+            }
+            catch { /* ignore invalid JSON */ }
+        }}></textarea>
+        </div>
+      </details>
     `;
     }
     _renderQRFields() {
@@ -1587,6 +1604,7 @@ let NspCardEditor = class NspCardEditor extends i {
             this._updateField("cooldown", v ? Number(v) : undefined);
         }} />
       </div>
+      <p class="hint">💡 First 2 entities appear in the center; remaining entities are placed on the periphery.</p>
       ${this._renderEntityList()}
     `;
     }
@@ -1635,6 +1653,11 @@ NspCardEditor.styles = i$3 `
     details.nav-items summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--secondary-text-color); padding: 4px 0; }
     details.nav-items[open] summary { margin-bottom: 12px; }
     details.nav-items { border-top: 1px solid var(--divider-color); padding-top: 8px; }
+    details.advanced-section { border-top: 1px solid var(--divider-color); padding-top: 8px; }
+    details.advanced-section summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--secondary-text-color); padding: 4px 0; }
+    details.advanced-section[open] summary { margin-bottom: 12px; }
+    details.advanced-section textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; background: var(--card-background-color, white); color: var(--primary-text-color); font-family: "Fira Code", "Consolas", monospace; font-size: 13px; }
+    .hint { color: var(--secondary-text-color); font-size: 12px; font-style: italic; margin: 4px 0 8px; }
   `;
 __decorate([
     n({ attribute: false })
@@ -1997,11 +2020,1115 @@ NspYamlPreview = __decorate([
     t("nsp-yaml-preview")
 ], NspYamlPreview);
 
+const THEME_KEYS = [
+    "background",
+    "time",
+    "timeAMPM",
+    "date",
+    "tMainText",
+    "tForecast1",
+    "tForecast2",
+    "tForecast3",
+    "tForecast4",
+    "tForecast1Val",
+    "tForecast2Val",
+    "tForecast3Val",
+    "tForecast4Val",
+    "bar",
+    "tMainTextAlt2",
+    "tTimeAdd",
+];
+let NspScreensaverEditor = class NspScreensaverEditor extends i {
+    constructor() {
+        super(...arguments);
+        this.cardKeys = [];
+    }
+    _fireChanged(updated) {
+        this.dispatchEvent(new CustomEvent("screensaver-changed", {
+            detail: { screensaver: updated },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _updateField(field, value) {
+        const updated = { ...this.screensaver, [field]: value };
+        if (value === undefined || value === "" || value === null) {
+            delete updated[field];
+        }
+        this._fireChanged(updated);
+    }
+    _isAdvancedMode() {
+        return !!(this.screensaver?.entities?.length);
+    }
+    _getEntities() {
+        return this.screensaver?.entities || [];
+    }
+    _addEntity() {
+        const entities = [...this._getEntities(), { entity: "" }];
+        this._updateField("entities", entities);
+    }
+    _removeEntity(index) {
+        const entities = this._getEntities().filter((_, i) => i !== index);
+        this._updateField("entities", entities.length ? entities : undefined);
+    }
+    _updateEntity(index, entity) {
+        const entities = [...this._getEntities()];
+        entities[index] = entity;
+        this._updateField("entities", entities);
+    }
+    _updateStatusIcon(field, icon) {
+        this._updateField(field, icon);
+    }
+    _updateThemeColor(key, rgb) {
+        const theme = { ...(this.screensaver?.theme || {}) };
+        if (rgb === undefined) {
+            delete theme[key];
+        }
+        else {
+            theme[key] = rgb;
+        }
+        this._updateField("theme", Object.keys(theme).length ? theme : undefined);
+    }
+    render() {
+        const sc = this.screensaver || {};
+        const advanced = this._isAdvancedMode();
+        const entities = this._getEntities();
+        return b `
+      <div class="screensaver-editor">
+        <!-- Type & Mode -->
+        <section>
+          <h3>Type</h3>
+          <div class="field-row">
+            <div class="field">
+              <label>Screensaver Type</label>
+              <select
+                .value=${sc.type || "screensaver"}
+                @change=${(e) => this._updateField("type", e.target.value)}
+              >
+                <option
+                  value="screensaver"
+                  ?selected=${!sc.type || sc.type === "screensaver"}
+                >
+                  screensaver
+                </option>
+                <option
+                  value="screensaver2"
+                  ?selected=${sc.type === "screensaver2"}
+                >
+                  screensaver2 (v4.0.0+)
+                </option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Mode</label>
+              <select
+                @change=${(e) => {
+            const val = e.target.value;
+            if (val === "simple") {
+                this._updateField("entities", undefined);
+            }
+            else {
+                this._updateField("entity", undefined);
+                if (!this._getEntities().length)
+                    this._addEntity();
+            }
+        }}
+              >
+                <option value="simple" ?selected=${!advanced}>
+                  Simple (single entity)
+                </option>
+                <option value="advanced" ?selected=${advanced}>
+                  Advanced (entity list)
+                </option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Entity config -->
+        <section>
+          <h3>Weather / Entities</h3>
+          ${!advanced
+            ? b `
+                <div class="field">
+                  <label>Weather Entity</label>
+                  <nsp-entity-picker
+                    .hass=${this.hass}
+                    .value=${sc.entity || ""}
+                    .includeDomains=${["weather"]}
+                    allow-custom-entity
+                    @value-changed=${(e) => this._updateField("entity", e.detail.value)}
+                  ></nsp-entity-picker>
+                </div>
+              `
+            : b `
+                <div class="entity-list">
+                  <div class="section-header">
+                    <span class="count-label"
+                      >Entities (${entities.length}/6)</span
+                    >
+                    ${entities.length < 6
+                ? b `<button
+                          class="btn-sm"
+                          @click=${this._addEntity}
+                        >
+                          + Add Entity
+                        </button>`
+                : A}
+                  </div>
+                  ${entities.length === 6
+                ? b `<div class="info-banner">
+                        ℹ️ 6 entities trigger the alternative screensaver
+                        layout
+                      </div>`
+                : A}
+                  ${entities.map((entity, i) => this._renderScreensaverEntity(entity, i))}
+                </div>
+              `}
+        </section>
+
+        <!-- Status Icons -->
+        <section>
+          <h3>Status Icons</h3>
+          ${this._renderStatusIcon("statusIcon1", sc.statusIcon1)}
+          ${this._renderStatusIcon("statusIcon2", sc.statusIcon2)}
+        </section>
+
+        <!-- Other settings -->
+        <section>
+          <h3>Behavior</h3>
+          <div class="field">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${!!sc.doubleTapToUnlock}
+                @change=${(e) => this._updateField("doubleTapToUnlock", e.target.checked || undefined)}
+              />
+              Double-tap to unlock
+            </label>
+          </div>
+          <div class="field">
+            <label>Default Card (key or template)</label>
+            <div class="default-card-row">
+              <input
+                type="text"
+                .value=${sc.defaultCard || ""}
+                placeholder="Card key or HA template"
+                @input=${(e) => this._updateField("defaultCard", e.target.value)}
+              />
+              ${this.cardKeys.length > 0
+            ? b `
+                    <select
+                      @change=${(e) => {
+                const val = e.target.value;
+                if (val)
+                    this._updateField("defaultCard", val);
+                e.target.value = "";
+            }}
+                    >
+                      <option value="">Pick key…</option>
+                      ${this.cardKeys.map((k) => b `<option value=${k}>${k}</option>`)}
+                    </select>
+                  `
+            : A}
+            </div>
+          </div>
+        </section>
+
+        <!-- Theme -->
+        <details class="theme-section">
+          <summary>Theme Colors</summary>
+          <div class="theme-grid">
+            ${THEME_KEYS.map((key) => this._renderThemeColor(key, sc.theme))}
+          </div>
+        </details>
+      </div>
+    `;
+    }
+    _renderScreensaverEntity(entity, index) {
+        return b `
+      <div class="ss-entity">
+        <div class="ss-entity-header">
+          <span class="entity-label">${entity.entity || "(empty)"}</span>
+          <button
+            class="btn-icon"
+            @click=${() => this._removeEntity(index)}
+          >
+            ✕
+          </button>
+        </div>
+        <div class="ss-entity-body">
+          <div class="field">
+            <label>Entity</label>
+            <nsp-entity-picker
+              .hass=${this.hass}
+              .value=${entity.entity || ""}
+              .includeDomains=${["weather", "sensor"]}
+              allow-custom-entity
+              @value-changed=${(e) => this._updateEntity(index, {
+            ...entity,
+            entity: e.detail.value,
+        })}
+            ></nsp-entity-picker>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Type (forecast day 0–3)</label>
+              <select
+                .value=${String(entity.type ?? "")}
+                @change=${(e) => {
+            const val = e.target.value;
+            const newEntity = { ...entity };
+            if (val === "")
+                delete newEntity.type;
+            else
+                newEntity.type = parseInt(val);
+            this._updateEntity(index, newEntity);
+        }}
+              >
+                <option value="">Default</option>
+                <option value="0" ?selected=${entity.type === 0}>
+                  0 (today)
+                </option>
+                <option value="1" ?selected=${entity.type === 1}>
+                  1 (tomorrow)
+                </option>
+                <option value="2" ?selected=${entity.type === 2}>2</option>
+                <option value="3" ?selected=${entity.type === 3}>3</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Name Override</label>
+              <input
+                type="text"
+                .value=${entity.name || ""}
+                @input=${(e) => {
+            const val = e.target.value;
+            const newEntity = { ...entity };
+            if (val)
+                newEntity.name = val;
+            else
+                delete newEntity.name;
+            this._updateEntity(index, newEntity);
+        }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderStatusIcon(field, icon) {
+        const label = field === "statusIcon1" ? "Status Icon 1" : "Status Icon 2";
+        if (!icon) {
+            return b `
+        <div class="field">
+          <label>${label}</label>
+          <button
+            class="btn-sm"
+            @click=${() => this._updateStatusIcon(field, { entity: "" })}
+          >
+            + Configure ${label}
+          </button>
+        </div>
+      `;
+        }
+        return b `
+      <div class="status-icon">
+        <div class="section-header">
+          <label>${label}</label>
+          <button
+            class="btn-sm danger"
+            @click=${() => this._updateStatusIcon(field, undefined)}
+          >
+            Remove
+          </button>
+        </div>
+        <div class="field">
+          <label>Entity</label>
+          <nsp-entity-picker
+            .hass=${this.hass}
+            .value=${icon.entity || ""}
+            allow-custom-entity
+            @value-changed=${(e) => this._updateStatusIcon(field, {
+            ...icon,
+            entity: e.detail.value,
+        })}
+          ></nsp-entity-picker>
+        </div>
+        <div class="field">
+          <label>Icon Override</label>
+          <input
+            type="text"
+            .value=${icon.icon || ""}
+            placeholder="mdi:icon-name"
+            @input=${(e) => {
+            const val = e.target.value;
+            const updated = { ...icon };
+            if (val)
+                updated.icon = val;
+            else
+                delete updated.icon;
+            this._updateStatusIcon(field, updated);
+        }}
+          />
+        </div>
+        <div class="field">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${!!icon.altFont}
+              @change=${(e) => this._updateStatusIcon(field, {
+            ...icon,
+            altFont: e.target.checked || undefined,
+        })}
+            />
+            Use alt font
+          </label>
+        </div>
+      </div>
+    `;
+    }
+    _renderThemeColor(key, theme) {
+        const color = theme?.[key];
+        const active = !!color;
+        const r = color?.[0] ?? 255;
+        const g = color?.[1] ?? 255;
+        const b$1 = color?.[2] ?? 255;
+        return b `
+      <div class="theme-color">
+        <div class="theme-color-header">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${active}
+              @change=${(e) => {
+            if (e.target.checked) {
+                this._updateThemeColor(key, [255, 255, 255]);
+            }
+            else {
+                this._updateThemeColor(key, undefined);
+            }
+        }}
+            />
+            ${key}
+          </label>
+        </div>
+        ${active
+            ? b `
+              <div class="rgb-row">
+                ${["R", "G", "B"].map((ch, i) => b `
+                    <label>${ch}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="255"
+                      .value=${String([r, g, b$1][i])}
+                      @input=${(e) => {
+                const val = Math.max(0, Math.min(255, parseInt(e.target.value) || 0));
+                const newColor = [r, g, b$1];
+                newColor[i] = val;
+                this._updateThemeColor(key, newColor);
+            }}
+                    />
+                  `)}
+                <div
+                  class="color-preview"
+                  style="background: rgb(${r},${g},${b$1})"
+                ></div>
+              </div>
+            `
+            : A}
+      </div>
+    `;
+    }
+};
+NspScreensaverEditor.styles = i$3 `
+    :host {
+      display: block;
+    }
+    .screensaver-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    section {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    section h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      color: var(--primary-text-color);
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .field:last-child {
+      margin-bottom: 0;
+    }
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    .field input[type="text"],
+    .field input[type="number"],
+    .field select {
+      padding: 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 14px;
+    }
+    .field-row {
+      display: flex;
+      gap: 12px;
+    }
+    .field-row .field {
+      flex: 1;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--primary-text-color);
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .count-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      border: 1px dashed var(--divider-color);
+      border-radius: 4px;
+      background: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--primary-color);
+    }
+    .btn-sm.danger {
+      color: var(--error-color, #db4437);
+      border-color: var(--error-color, #db4437);
+      border-style: solid;
+    }
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 8px;
+      color: var(--error-color, #db4437);
+    }
+    .info-banner {
+      background: var(--info-color, #2196f3);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .entity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ss-entity {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .ss-entity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--secondary-background-color, #f5f5f5);
+    }
+    .entity-label {
+      font-size: 13px;
+      color: var(--primary-text-color);
+    }
+    .ss-entity-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .status-icon {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .status-icon:last-child {
+      margin-bottom: 0;
+    }
+    .default-card-row {
+      display: flex;
+      gap: 8px;
+    }
+    .default-card-row input {
+      flex: 1;
+    }
+    .default-card-row select {
+      padding: 8px;
+      border: 1px solid var(--divider-color);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 14px;
+    }
+    .theme-section {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .theme-section summary {
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--primary-text-color);
+    }
+    .theme-section[open] summary {
+      margin-bottom: 16px;
+    }
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .theme-color {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 6px;
+      padding: 8px;
+    }
+    .theme-color-header {
+      margin-bottom: 4px;
+    }
+    .rgb-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .rgb-row label {
+      font-size: 11px;
+      font-weight: 500;
+      min-width: 14px;
+    }
+    .rgb-row input {
+      width: 54px;
+      padding: 4px 6px;
+      font-size: 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+    }
+    .color-preview {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+      flex-shrink: 0;
+    }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspScreensaverEditor.prototype, "hass", void 0);
+__decorate([
+    n({ attribute: false })
+], NspScreensaverEditor.prototype, "screensaver", void 0);
+__decorate([
+    n({ type: Array })
+], NspScreensaverEditor.prototype, "cardKeys", void 0);
+NspScreensaverEditor = __decorate([
+    t("nsp-screensaver-editor")
+], NspScreensaverEditor);
+
+/** Convert 8-bit R, G, B channels to a decimal RGB565 value (NSPanel format). */
+function rgbToRgb565(r, g, b) {
+    return ((r & 0xf8) << 8) | ((g & 0xfc) << 3) | (b >> 3);
+}
+let NspNotificationEditor = class NspNotificationEditor extends i {
+    constructor() {
+        super(...arguments);
+        this._type = "popup";
+        this._popup = {
+            heading: "Notification",
+            text: "Enter your message here",
+            headingColor: { r: 255, g: 255, b: 255 },
+            textColor: { r: 255, g: 255, b: 255 },
+            backgroundColor: { r: 42, g: 87, b: 100 },
+            buttonLeft: "Dismiss",
+            buttonRight: "",
+            font: 0,
+            icon: "",
+        };
+        this._screensaverNotif = {
+            heading: "Notification",
+            text: "Enter your message here",
+        };
+        this._buzzer = false;
+        this._copied = false;
+    }
+    _updatePopup(field, value) {
+        this._popup = { ...this._popup, [field]: value };
+    }
+    _updatePopupColor(field, channel, value) {
+        this._popup = {
+            ...this._popup,
+            [field]: {
+                ...this._popup[field],
+                [channel]: Math.max(0, Math.min(255, value)),
+            },
+        };
+    }
+    _generateYaml() {
+        if (this._type === "popup") {
+            const p = this._popup;
+            const headingColor565 = rgbToRgb565(p.headingColor.r, p.headingColor.g, p.headingColor.b);
+            const textColor565 = rgbToRgb565(p.textColor.r, p.textColor.g, p.textColor.b);
+            const bgColor565 = rgbToRgb565(p.backgroundColor.r, p.backgroundColor.g, p.backgroundColor.b);
+            const buttons = [p.buttonLeft, p.buttonRight]
+                .filter(Boolean)
+                .join("~");
+            const fontPart = p.font ? String(p.font) : "";
+            // Trim trailing tildes: NSPanel ignores empty trailing fields in the
+            // tilde-separated payload, but some firmware versions are sensitive to them.
+            const notifPayload = [
+                p.heading,
+                p.text,
+                headingColor565,
+                textColor565,
+                bgColor565,
+                fontPart,
+                buttons,
+                p.icon,
+            ]
+                .join("~")
+                .replace(/~+$/, ""); // trim trailing tildes
+            const buzzerBlock = this._buzzer
+                ? `      - service: mqtt.publish\n        data:\n          topic: "YOUR_PANEL_RECV_TOPIC"\n          payload: "buzzer~3~3"\n`
+                : "";
+            return (`# Send popup notification to NSPanel\n` +
+                `script:\n` +
+                `  send_nspanel_notification:\n` +
+                `    alias: "NSPanel Popup Notification"\n` +
+                `    sequence:\n` +
+                `      - service: mqtt.publish\n` +
+                `        data:\n` +
+                `          topic: "YOUR_PANEL_RECV_TOPIC"\n` +
+                `          payload: "pageType~pageNotify"\n` +
+                `      - service: mqtt.publish\n` +
+                `        data:\n` +
+                `          topic: "YOUR_PANEL_RECV_TOPIC"\n` +
+                `          payload: "notification~${notifPayload}"\n` +
+                buzzerBlock);
+        }
+        else {
+            const n = this._screensaverNotif;
+            const buzzerBlock = this._buzzer
+                ? `      - service: mqtt.publish\n        data:\n          topic: "YOUR_PANEL_RECV_TOPIC"\n          payload: "buzzer~3~3"\n`
+                : "";
+            return (`# Send screensaver notification to NSPanel\n` +
+                `script:\n` +
+                `  send_nspanel_screensaver_notification:\n` +
+                `    alias: "NSPanel Screensaver Notification"\n` +
+                `    sequence:\n` +
+                `      - service: mqtt.publish\n` +
+                `        data:\n` +
+                `          topic: "YOUR_PANEL_RECV_TOPIC"\n` +
+                `          payload: "screensaverNotification~${n.heading}~${n.text}"\n` +
+                buzzerBlock);
+        }
+    }
+    async _copyYaml() {
+        const yaml = this._generateYaml();
+        try {
+            await navigator.clipboard.writeText(yaml);
+        }
+        catch {
+            // Fallback for browsers that don't support the Clipboard API (legacy)
+            const ta = document.createElement("textarea");
+            ta.value = yaml;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+        }
+        this._copied = true;
+        setTimeout(() => {
+            this._copied = false;
+        }, 2000);
+    }
+    render() {
+        return b `
+      <div class="notif-editor">
+        <div class="field-row">
+          <div class="field">
+            <label>Notification Type</label>
+            <select
+              .value=${this._type}
+              @change=${(e) => {
+            this._type = e.target
+                .value;
+        }}
+            >
+              <option value="popup" ?selected=${this._type === "popup"}>
+                Popup Notification
+              </option>
+              <option
+                value="screensaver"
+                ?selected=${this._type === "screensaver"}
+              >
+                Screensaver Notification
+              </option>
+            </select>
+          </div>
+        </div>
+
+        ${this._type === "popup"
+            ? this._renderPopupEditor()
+            : this._renderScreensaverNotifEditor()}
+
+        <div class="field">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${this._buzzer}
+              @change=${(e) => {
+            this._buzzer = e.target.checked;
+        }}
+            />
+            Include buzzer (3 beeps)
+          </label>
+        </div>
+
+        <div class="yaml-output">
+          <div class="yaml-header">
+            <h4>Generated HA Script YAML</h4>
+            <button class="btn btn-primary" @click=${this._copyYaml}>
+              ${this._copied ? "Copied!" : "Copy YAML"}
+            </button>
+          </div>
+          <pre><code>${this._generateYaml()}</code></pre>
+        </div>
+      </div>
+    `;
+    }
+    _renderPopupEditor() {
+        const p = this._popup;
+        return b `
+      <div class="field">
+        <label>Heading</label>
+        <input
+          type="text"
+          .value=${p.heading}
+          @input=${(e) => this._updatePopup("heading", e.target.value)}
+        />
+      </div>
+      <div class="field">
+        <label>Message Text</label>
+        <textarea
+          rows="3"
+          .value=${p.text}
+          @input=${(e) => this._updatePopup("text", e.target.value)}
+        ></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Left Button (optional)</label>
+          <input
+            type="text"
+            .value=${p.buttonLeft}
+            @input=${(e) => this._updatePopup("buttonLeft", e.target.value)}
+          />
+        </div>
+        <div class="field">
+          <label>Right Button (optional)</label>
+          <input
+            type="text"
+            .value=${p.buttonRight}
+            @input=${(e) => this._updatePopup("buttonRight", e.target.value)}
+          />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Font (0–5)</label>
+          <input
+            type="number"
+            min="0"
+            max="5"
+            .value=${String(p.font)}
+            @input=${(e) => this._updatePopup("font", parseInt(e.target.value) || 0)}
+          />
+        </div>
+        <div class="field">
+          <label>Icon (optional)</label>
+          <input
+            type="text"
+            .value=${p.icon}
+            placeholder="e.g. alert-outline"
+            @input=${(e) => this._updatePopup("icon", e.target.value)}
+          />
+        </div>
+      </div>
+      ${this._renderRgb565Picker("headingColor", "Heading Color", p.headingColor)}
+      ${this._renderRgb565Picker("textColor", "Text Color", p.textColor)}
+      ${this._renderRgb565Picker("backgroundColor", "Background Color", p.backgroundColor)}
+    `;
+    }
+    _renderScreensaverNotifEditor() {
+        const n = this._screensaverNotif;
+        return b `
+      <div class="field">
+        <label>Heading</label>
+        <input
+          type="text"
+          .value=${n.heading}
+          @input=${(e) => {
+            this._screensaverNotif = {
+                ...n,
+                heading: e.target.value,
+            };
+        }}
+        />
+      </div>
+      <div class="field">
+        <label>Message Text</label>
+        <textarea
+          rows="3"
+          .value=${n.text}
+          @input=${(e) => {
+            this._screensaverNotif = {
+                ...n,
+                text: e.target.value,
+            };
+        }}
+        ></textarea>
+      </div>
+    `;
+    }
+    _renderRgb565Picker(field, label, color) {
+        const rgb565 = rgbToRgb565(color.r, color.g, color.b);
+        return b `
+      <div class="color-picker">
+        <div class="color-label">
+          <label>${label}</label>
+          <span class="rgb565-value">RGB565: ${rgb565}</span>
+          <div
+            class="color-swatch"
+            style="background: rgb(${color.r},${color.g},${color.b})"
+          ></div>
+        </div>
+        <div class="rgb-row">
+          ${["r", "g", "b"].map((ch) => b `
+              <label>${ch.toUpperCase()}</label>
+              <input
+                type="number"
+                min="0"
+                max="255"
+                .value=${String(color[ch])}
+                @input=${(e) => this._updatePopupColor(field, ch, parseInt(e.target.value) || 0)}
+              />
+            `)}
+        </div>
+      </div>
+    `;
+    }
+};
+NspNotificationEditor.styles = i$3 `
+    :host {
+      display: block;
+    }
+    .notif-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    .field input[type="text"],
+    .field input[type="number"],
+    .field select,
+    .field textarea {
+      padding: 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .field-row {
+      display: flex;
+      gap: 12px;
+    }
+    .field-row .field {
+      flex: 1;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--primary-text-color);
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+    }
+    .color-picker {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .color-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .color-label label {
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+    }
+    .rgb565-value {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+      font-family: monospace;
+    }
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+      flex-shrink: 0;
+    }
+    .rgb-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .rgb-row label {
+      font-size: 11px;
+      font-weight: 500;
+      min-width: 14px;
+    }
+    .rgb-row input {
+      width: 54px;
+      padding: 4px 6px;
+      font-size: 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+    }
+    .yaml-output {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .yaml-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      background: var(--secondary-background-color, #f5f5f5);
+    }
+    .yaml-header h4 {
+      margin: 0;
+      font-size: 13px;
+    }
+    .btn {
+      padding: 6px 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-primary {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    pre {
+      margin: 0;
+      padding: 12px 16px;
+      background: var(--card-background-color, white);
+      overflow: auto;
+      max-height: 300px;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    code {
+      font-family: "Fira Code", "Consolas", monospace;
+      color: var(--primary-text-color);
+    }
+  `;
+__decorate([
+    r()
+], NspNotificationEditor.prototype, "_type", void 0);
+__decorate([
+    r()
+], NspNotificationEditor.prototype, "_popup", void 0);
+__decorate([
+    r()
+], NspNotificationEditor.prototype, "_screensaverNotif", void 0);
+__decorate([
+    r()
+], NspNotificationEditor.prototype, "_buzzer", void 0);
+__decorate([
+    r()
+], NspNotificationEditor.prototype, "_copied", void 0);
+NspNotificationEditor = __decorate([
+    t("nsp-notification-editor")
+], NspNotificationEditor);
+
 const TAB_LABELS = {
     settings: "Settings",
     cards: "Cards",
     hiddenCards: "Hidden Cards",
     screensaver: "Screensaver",
+    notifications: "Notifications",
     yaml: "YAML Preview",
 };
 let NspPanelEditor = class NspPanelEditor extends i {
@@ -2099,10 +3226,23 @@ let NspPanelEditor = class NspPanelEditor extends i {
         this._data = { ...this._data, hiddenCards: e.detail.cards };
         this._dirty = true;
     }
+    _onScreensaverChanged(e) {
+        if (!this._data)
+            return;
+        this._data = { ...this._data, screensaver: e.detail.screensaver };
+        this._dirty = true;
+    }
     _getHiddenCardKeys() {
         if (!this._data)
             return [];
         return this._data.hiddenCards
+            .map((c) => c.key)
+            .filter((k) => !!k);
+    }
+    _getCardKeys() {
+        if (!this._data)
+            return [];
+        return [...this._data.cards, ...this._data.hiddenCards]
             .map((c) => c.key)
             .filter((k) => !!k);
     }
@@ -2183,24 +3323,23 @@ let NspPanelEditor = class NspPanelEditor extends i {
           ></nsp-card-list>
         `;
             case "screensaver":
-                return this._renderScreensaverReadonly();
+                return b `
+          <nsp-screensaver-editor
+            .hass=${this.hass}
+            .screensaver=${this._data.screensaver}
+            .cardKeys=${this._getCardKeys()}
+            @screensaver-changed=${this._onScreensaverChanged}
+          ></nsp-screensaver-editor>
+        `;
+            case "notifications":
+                return b `
+          <nsp-notification-editor></nsp-notification-editor>
+        `;
             case "yaml":
                 return b `
           <nsp-yaml-preview .hass=${this.hass}></nsp-yaml-preview>
         `;
         }
-    }
-    _renderScreensaverReadonly() {
-        const sc = this._data?.screensaver;
-        if (!sc || Object.keys(sc).length === 0) {
-            return b `<p class="empty">No screensaver configured. Full screensaver editor coming in a future update.</p>`;
-        }
-        return b `
-      <div class="screensaver-readonly">
-        <p class="hint">Screensaver config (read-only). Full editor coming in a future update.</p>
-        <pre><code>${JSON.stringify(sc, null, 2)}</code></pre>
-      </div>
-    `;
     }
 };
 NspPanelEditor.styles = i$3 `
@@ -2288,8 +3427,6 @@ NspPanelEditor.styles = i$3 `
       box-sizing: border-box;
     }
     .empty { text-align: center; color: var(--secondary-text-color); padding: 32px; }
-    .screensaver-readonly { display: flex; flex-direction: column; gap: 8px; }
-    .hint { color: var(--secondary-text-color); font-size: 13px; font-style: italic; margin: 0; }
     pre {
       background: var(--card-background-color, white);
       border: 1px solid var(--divider-color, #e0e0e0);
