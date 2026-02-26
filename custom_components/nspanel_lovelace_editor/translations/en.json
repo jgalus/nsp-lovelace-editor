@@ -1,0 +1,19 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "NSPanel Lovelace Editor",
+                "description": "Configure the path to your AppDaemon apps.yaml file.",
+                "data": {
+                    "appdaemon_path": "AppDaemon apps.yaml path"
+                },
+                "data_description": {
+                    "appdaemon_path": "Full path to the AppDaemon apps.yaml file that contains your NSPanel Lovelace UI configuration."
+                }
+            }
+        },
+        "abort": {
+            "already_configured": "NSPanel Lovelace Editor is already configured."
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "nspanel_lovelace_editor",
+    "name": "NSPanel Lovelace Editor",
+    "codeowners": [],
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/YOUR_USERNAME/nsp-lovelace-editor",
+    "integration_type": "service",
+    "iot_class": "local_push",
+    "issue_tracker": "https://github.com/YOUR_USERNAME/nsp-lovelace-editor/issues",
+    "version": "0.1.0"
+}
