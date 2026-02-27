@@ -196,12 +196,21 @@ export class NspImportExport extends LitElement {
               <div class="warning">
                 ⚠ apps.yaml is not accessible from Home Assistant.
                 Use <button class="link-btn" @click=${() => { this._tab = "paste"; }}>paste-based import</button> instead.
+                instead.
+              </div>
+            `
+          : ""}
+        ${!this._checkingPath && this._pathStatus === null
+          ? html`
+              <div class="warning">
+                ⚠ apps.yaml path could not be verified.
+                Use <button class="link-btn" @click=${() => { this._tab = "paste"; }}>paste-based import</button> instead.
               </div>
             `
           : ""}
         <button
           class="btn btn-primary"
-          ?disabled=${this._loading || this._checkingPath || (this._pathStatus !== null && !pathOk)}
+          ?disabled=${this._loading || this._checkingPath || !pathOk}
           @click=${this._importFromFile}
         >
           ${this._loading ? "Importing…" : "Import from apps.yaml"}
