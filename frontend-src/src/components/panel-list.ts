@@ -1,5 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { createDefaultPanelData } from "../models/types";
 import type { HomeAssistant, PanelSummary } from "../models/types";
 import "./import-export";
 
@@ -57,19 +58,16 @@ export class NspPanelList extends LitElement {
     this._adding = true;
     this._addError = null;
     try {
+      const defaults = createDefaultPanelData();
+      defaults.config.panelRecvTopic = `cmnd/${id}/CustomSend`;
+      defaults.config.panelSendTopic = `tele/${id}/RESULT`;
       await this.hass.callWS({
         type: "nspanel_editor/save_panel",
         panel_id: id,
-        config: {
-          panelRecvTopic: `cmnd/${id}/CustomSend`,
-          panelSendTopic: `tele/${id}/RESULT`,
-          model: "eu",
-          updateMode: "auto-notify",
-          locale: "en_US",
-        },
-        cards: [],
-        hiddenCards: [],
-        screensaver: {},
+        config: defaults.config,
+        cards: defaults.cards,
+        hiddenCards: defaults.hiddenCards,
+        screensaver: defaults.screensaver,
       });
       this._showAddForm = false;
       this._newPanelId = "";
@@ -245,7 +243,13 @@ export class NspPanelList extends LitElement {
 
     return html`
       <div class="panel-card">
-        <div class="card-main" @click=${() => { if (!isDeleting && !isCloning && !isRenaming) this._fireSelect(id); }}>
+        <div
+          class="card-main"
+          role="button"
+          tabindex="0"
+          @click=${() => { if (!isDeleting && !isCloning && !isRenaming) this._fireSelect(id); }}
+          @keydown=${(e: KeyboardEvent) => { if ((e.key === "Enter" || e.key === " ") && !isDeleting && !isCloning && !isRenaming) { e.preventDefault(); this._fireSelect(id); } }}
+        >
           <h3>${id}</h3>
           <div class="panel-info">
             <span>Model: ${panel.model?.toUpperCase() || "EU"}</span>
@@ -404,6 +408,7 @@ export class NspPanelList extends LitElement {
     }
     .panel-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
     .card-main { cursor: pointer; flex: 1; }
+    .card-main:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); border-radius: 4px; }
     .card-main h3 { margin: 0 0 8px 0; }
     .card-actions { display: flex; gap: 4px; justify-content: flex-end; }
     .btn-icon {

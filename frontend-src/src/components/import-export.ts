@@ -168,10 +168,15 @@ export class NspImportExport extends LitElement {
         </div>
 
         <div class="section">
-          <div class="section-header" @click=${this._toggleExport}>
+          <button
+            type="button"
+            class="section-header"
+            @click=${this._toggleExport}
+            aria-expanded=${this._showExport ? "true" : "false"}
+          >
             <h3>Export / YAML Preview</h3>
             <span class="chevron">${this._showExport ? "▲" : "▼"}</span>
-          </div>
+          </button>
           ${this._showExport ? this._renderExport() : ""}
         </div>
       </div>
@@ -247,7 +252,7 @@ export class NspImportExport extends LitElement {
           >${this._copied ? "Copied!" : "Copy to Clipboard"}</button>
           <button
             class="btn btn-export"
-            ?disabled=${this._loading || !this._pathStatus?.writable}
+            ?disabled=${this._loading || !(this._pathStatus?.writable || (!this._pathStatus?.exists && this._pathStatus?.parent_writable))}
             @click=${this._exportToFile}
           >${this._loading ? "Exporting…" : "Export to apps.yaml"}</button>
         </div>
@@ -259,7 +264,7 @@ export class NspImportExport extends LitElement {
               </div>
             `
           : ""}
-        ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.writable
+        ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.writable && !(!this._pathStatus.exists && this._pathStatus.parent_writable)
           ? html`
               <div class="warning">
                 ⚠ apps.yaml is not writable. Copy the YAML to clipboard and paste it manually.
@@ -292,7 +297,15 @@ export class NspImportExport extends LitElement {
       justify-content: space-between;
       cursor: pointer;
       user-select: none;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      text-align: left;
+      color: inherit;
+      font: inherit;
     }
+    .section-header:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); border-radius: 4px; }
     .section-header h3 { margin: 0; }
     .chevron { color: var(--secondary-text-color); font-size: 12px; }
     .tabs {

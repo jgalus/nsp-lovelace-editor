@@ -77,6 +77,7 @@ export class NspPanelEditor extends LitElement {
         screensaver: this._data.screensaver,
       });
       this._dirty = false;
+      this._confirmBack = false;
       this._saveSuccess = true;
       this._exportStatus = null;
       setTimeout(() => { this._saveSuccess = false; }, 15000);

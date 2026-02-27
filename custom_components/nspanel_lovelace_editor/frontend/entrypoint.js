@@ -92,6 +92,138 @@ async function loadHaComponents() {
     }
 }
 
+/**
+ * TypeScript type definitions mirroring the backend schema.
+ * See: custom_components/nspanel_lovelace_editor/schema.py and const.py
+ */
+// --- Constants ---
+const CARD_TYPES = [
+    "cardEntities",
+    "cardGrid",
+    "cardThermo",
+    "cardMedia",
+    "cardAlarm",
+    "cardQR",
+    "cardPower",
+];
+const MODELS = ["eu", "us-l", "us-p"];
+const UPDATE_MODES = ["auto", "auto-notify", "manual"];
+const BACKGROUND_COLORS = ["ha-dark", "black"];
+const CLIMATE_MODES = [
+    "off", "heat", "cool", "auto", "dry", "fan_only",
+];
+const ALARM_MODES = [
+    "arm_home", "arm_away", "arm_night", "arm_vacation", "arm_custom_bypass",
+];
+const LOCALES = [
+    ["af_ZA", "Afrikaans"],
+    ["ar_SY", "Arabic"],
+    ["bg_BG", "Bulgarian"],
+    ["ca_ES", "Catalan"],
+    ["cs_CZ", "Czech"],
+    ["da_DK", "Danish"],
+    ["de_DE", "German"],
+    ["el_GR", "Greek"],
+    ["en_US", "English"],
+    ["es_ES", "Spanish"],
+    ["et_EE", "Estonian"],
+    ["fa_IR", "Persian"],
+    ["fi_FI", "Finnish"],
+    ["fr_FR", "French"],
+    ["he_IL", "Hebrew"],
+    ["hr_xx", "Croatian"],
+    ["hu_HU", "Hungarian"],
+    ["hy_AM", "Armenian"],
+    ["id_ID", "Indonesian"],
+    ["is_IS", "Icelandic"],
+    ["it_IT", "Italian"],
+    ["lb_xx", "Luxembourgish"],
+    ["lt_LT", "Lithuanian"],
+    ["lv_LV", "Latvian"],
+    ["nb_NO", "Norwegian"],
+    ["nl_NL", "Dutch"],
+    ["nn_NO", "Norwegian Nynorsk"],
+    ["pl_PL", "Polish"],
+    ["pt_PT", "Portuguese"],
+    ["ro_RO", "Romanian"],
+    ["ru_RU", "Russian"],
+    ["sk_SK", "Slovak"],
+    ["sl_SI", "Slovenian"],
+    ["sv_SE", "Swedish"],
+    ["th_TH", "Thai"],
+    ["tr_TR", "Turkish"],
+    ["uk_UA", "Ukrainian"],
+    ["vi_VN", "Vietnamese"],
+    ["zh_CN", "Simplified Chinese"],
+    ["zh_TW", "Traditional Chinese"],
+];
+const ENTITY_DOMAINS_CARD_ENTITIES = [
+    "cover", "switch", "input_boolean", "binary_sensor", "sensor", "button",
+    "number", "input_number", "scene", "script", "input_button", "light",
+    "input_text", "input_select", "lock", "fan", "automation",
+    "alarm_control_panel", "sun", "person", "climate",
+];
+const ENTITY_DOMAINS_CARD_QR = [
+    "switch", "input_boolean", "binary_sensor", "sensor", "button",
+    "scene", "script", "input_button", "input_select", "light",
+    "input_text", "lock", "automation",
+];
+// --- Helpers ---
+function getEntityDomainsForCard(cardType) {
+    switch (cardType) {
+        case "cardQR":
+            return ENTITY_DOMAINS_CARD_QR;
+        case "cardPower":
+            return ["sensor"];
+        case "cardThermo":
+            return ["climate"];
+        case "cardMedia":
+            return ["media_player"];
+        case "cardAlarm":
+            return ["alarm_control_panel"];
+        default:
+            return ENTITY_DOMAINS_CARD_ENTITIES;
+    }
+}
+function createDefaultCard(type) {
+    switch (type) {
+        case "cardEntities":
+            return { type, entities: [] };
+        case "cardGrid":
+            return { type, entities: [] };
+        case "cardThermo":
+            return { type, entity: "" };
+        case "cardMedia":
+            return { type, entity: "" };
+        case "cardAlarm":
+            return { type, entity: "" };
+        case "cardQR":
+            return { type, qrCode: "", entities: [] };
+        case "cardPower":
+            return { type, entities: [] };
+    }
+}
+function createDefaultEntity() {
+    return { entity: "" };
+}
+function createDefaultPanelConfig() {
+    return {
+        panelRecvTopic: "cmnd/tasmota_your_mqtt_topic/CustomSend",
+        panelSendTopic: "tele/tasmota_your_mqtt_topic/RESULT",
+        model: "eu",
+        updateMode: "auto-notify",
+        locale: "en_US",
+    };
+}
+function createDefaultPanelData() {
+    return {
+        config: createDefaultPanelConfig(),
+        cards: [],
+        hiddenCards: [],
+        screensaver: {},
+    };
+}
+
 let NspImportExport = class NspImportExport extends i$1 {
     constructor() {
         super(...arguments);
@@ -243,10 +375,15 @@ let NspImportExport = class NspImportExport extends i$1 {
         </div>
 
         <div class="section">
-          <div class="section-header" @click=${this._toggleExport}>
+          <button
+            type="button"
+            class="section-header"
+            @click=${this._toggleExport}
+            aria-expanded=${this._showExport ? "true" : "false"}
+          >
             <h3>Export / YAML Preview</h3>
             <span class="chevron">${this._showExport ? "▲" : "▼"}</span>
-          </div>
+          </button>
           ${this._showExport ? this._renderExport() : ""}
         </div>
       </div>
@@ -319,7 +456,7 @@ let NspImportExport = class NspImportExport extends i$1 {
           >${this._copied ? "Copied!" : "Copy to Clipboard"}</button>
           <button
             class="btn btn-export"
-            ?disabled=${this._loading || !this._pathStatus?.writable}
+            ?disabled=${this._loading || !(this._pathStatus?.writable || (!this._pathStatus?.exists && this._pathStatus?.parent_writable))}
             @click=${this._exportToFile}
           >${this._loading ? "Exporting…" : "Export to apps.yaml"}</button>
         </div>
@@ -331,7 +468,7 @@ let NspImportExport = class NspImportExport extends i$1 {
               </div>
             `
             : ""}
-        ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.writable
+        ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.writable && !(!this._pathStatus.exists && this._pathStatus.parent_writable)
             ? b `
               <div class="warning">
                 ⚠ apps.yaml is not writable. Copy the YAML to clipboard and paste it manually.
@@ -364,7 +501,15 @@ NspImportExport.styles = i$4 `
       justify-content: space-between;
       cursor: pointer;
       user-select: none;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      text-align: left;
+      color: inherit;
+      font: inherit;
     }
+    .section-header:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); border-radius: 4px; }
     .section-header h3 { margin: 0; }
     .chevron { color: var(--secondary-text-color); font-size: 12px; }
     .tabs {
@@ -569,19 +714,16 @@ let NspPanelList = class NspPanelList extends i$1 {
         this._adding = true;
         this._addError = null;
         try {
+            const defaults = createDefaultPanelData();
+            defaults.config.panelRecvTopic = `cmnd/${id}/CustomSend`;
+            defaults.config.panelSendTopic = `tele/${id}/RESULT`;
             await this.hass.callWS({
                 type: "nspanel_editor/save_panel",
                 panel_id: id,
-                config: {
-                    panelRecvTopic: `cmnd/${id}/CustomSend`,
-                    panelSendTopic: `tele/${id}/RESULT`,
-                    model: "eu",
-                    updateMode: "auto-notify",
-                    locale: "en_US",
-                },
-                cards: [],
-                hiddenCards: [],
-                screensaver: {},
+                config: defaults.config,
+                cards: defaults.cards,
+                hiddenCards: defaults.hiddenCards,
+                screensaver: defaults.screensaver,
             });
             this._showAddForm = false;
             this._newPanelId = "";
@@ -763,8 +905,17 @@ let NspPanelList = class NspPanelList extends i$1 {
         const isRenaming = this._pendingRename === id;
         return b `
       <div class="panel-card">
-        <div class="card-main" @click=${() => { if (!isDeleting && !isCloning && !isRenaming)
-            this._fireSelect(id); }}>
+        <div
+          class="card-main"
+          role="button"
+          tabindex="0"
+          @click=${() => { if (!isDeleting && !isCloning && !isRenaming)
+            this._fireSelect(id); }}
+          @keydown=${(e) => { if ((e.key === "Enter" || e.key === " ") && !isDeleting && !isCloning && !isRenaming) {
+            e.preventDefault();
+            this._fireSelect(id);
+        } }}
+        >
           <h3>${id}</h3>
           <div class="panel-info">
             <span>Model: ${panel.model?.toUpperCase() || "EU"}</span>
@@ -929,6 +1080,7 @@ NspPanelList.styles = i$4 `
     }
     .panel-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
     .card-main { cursor: pointer; flex: 1; }
+    .card-main:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); border-radius: 4px; }
     .card-main h3 { margin: 0 0 8px 0; }
     .card-actions { display: flex; gap: 4px; justify-content: flex-end; }
     .btn-icon {
@@ -1076,121 +1228,6 @@ __decorate([
 NspPanelList = __decorate([
     t$1("nsp-panel-list")
 ], NspPanelList);
-
-/**
- * TypeScript type definitions mirroring the backend schema.
- * See: custom_components/nspanel_lovelace_editor/schema.py and const.py
- */
-// --- Constants ---
-const CARD_TYPES = [
-    "cardEntities",
-    "cardGrid",
-    "cardThermo",
-    "cardMedia",
-    "cardAlarm",
-    "cardQR",
-    "cardPower",
-];
-const MODELS = ["eu", "us-l", "us-p"];
-const UPDATE_MODES = ["auto", "auto-notify", "manual"];
-const BACKGROUND_COLORS = ["ha-dark", "black"];
-const CLIMATE_MODES = [
-    "off", "heat", "cool", "auto", "dry", "fan_only",
-];
-const ALARM_MODES = [
-    "arm_home", "arm_away", "arm_night", "arm_vacation", "arm_custom_bypass",
-];
-const LOCALES = [
-    ["af_ZA", "Afrikaans"],
-    ["ar_SY", "Arabic"],
-    ["bg_BG", "Bulgarian"],
-    ["ca_ES", "Catalan"],
-    ["cs_CZ", "Czech"],
-    ["da_DK", "Danish"],
-    ["de_DE", "German"],
-    ["el_GR", "Greek"],
-    ["en_US", "English"],
-    ["es_ES", "Spanish"],
-    ["et_EE", "Estonian"],
-    ["fa_IR", "Persian"],
-    ["fi_FI", "Finnish"],
-    ["fr_FR", "French"],
-    ["he_IL", "Hebrew"],
-    ["hr_xx", "Croatian"],
-    ["hu_HU", "Hungarian"],
-    ["hy_AM", "Armenian"],
-    ["id_ID", "Indonesian"],
-    ["is_IS", "Icelandic"],
-    ["it_IT", "Italian"],
-    ["lb_xx", "Luxembourgish"],
-    ["lt_LT", "Lithuanian"],
-    ["lv_LV", "Latvian"],
-    ["nb_NO", "Norwegian"],
-    ["nl_NL", "Dutch"],
-    ["nn_NO", "Norwegian Nynorsk"],
-    ["pl_PL", "Polish"],
-    ["pt_PT", "Portuguese"],
-    ["ro_RO", "Romanian"],
-    ["ru_RU", "Russian"],
-    ["sk_SK", "Slovak"],
-    ["sl_SI", "Slovenian"],
-    ["sv_SE", "Swedish"],
-    ["th_TH", "Thai"],
-    ["tr_TR", "Turkish"],
-    ["uk_UA", "Ukrainian"],
-    ["vi_VN", "Vietnamese"],
-    ["zh_CN", "Simplified Chinese"],
-    ["zh_TW", "Traditional Chinese"],
-];
-const ENTITY_DOMAINS_CARD_ENTITIES = [
-    "cover", "switch", "input_boolean", "binary_sensor", "sensor", "button",
-    "number", "input_number", "scene", "script", "input_button", "light",
-    "input_text", "input_select", "lock", "fan", "automation",
-    "alarm_control_panel", "sun", "person", "climate",
-];
-const ENTITY_DOMAINS_CARD_QR = [
-    "switch", "input_boolean", "binary_sensor", "sensor", "button",
-    "scene", "script", "input_button", "input_select", "light",
-    "input_text", "lock", "automation",
-];
-// --- Helpers ---
-function getEntityDomainsForCard(cardType) {
-    switch (cardType) {
-        case "cardQR":
-            return ENTITY_DOMAINS_CARD_QR;
-        case "cardPower":
-            return ["sensor"];
-        case "cardThermo":
-            return ["climate"];
-        case "cardMedia":
-            return ["media_player"];
-        case "cardAlarm":
-            return ["alarm_control_panel"];
-        default:
-            return ENTITY_DOMAINS_CARD_ENTITIES;
-    }
-}
-function createDefaultCard(type) {
-    switch (type) {
-        case "cardEntities":
-            return { type, entities: [] };
-        case "cardGrid":
-            return { type, entities: [] };
-        case "cardThermo":
-            return { type, entity: "" };
-        case "cardMedia":
-            return { type, entity: "" };
-        case "cardAlarm":
-            return { type, entity: "" };
-        case "cardQR":
-            return { type, qrCode: "", entities: [] };
-        case "cardPower":
-            return { type, entities: [] };
-    }
-}
-function createDefaultEntity() {
-    return { entity: "" };
-}
 
 /**
  * Self-contained entity picker that works without HA's built-in
@@ -4323,6 +4360,7 @@ let NspPanelEditor = class NspPanelEditor extends i$1 {
                 screensaver: this._data.screensaver,
             });
             this._dirty = false;
+            this._confirmBack = false;
             this._saveSuccess = true;
             this._exportStatus = null;
             setTimeout(() => { this._saveSuccess = false; }, 15000);
