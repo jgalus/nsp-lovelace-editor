@@ -194,8 +194,20 @@ export class NspImportExport extends LitElement {
         ${!this._checkingPath && this._pathStatus !== null && (!this._pathStatus.exists || !this._pathStatus.readable)
           ? html`
               <div class="warning">
-                ⚠ apps.yaml is not accessible from Home Assistant.
-                Use <button class="link-btn" @click=${() => { this._tab = "paste"; }}>paste-based import</button> instead.
+                ⚠
+                ${this._pathStatus.exists
+                  ? "apps.yaml exists but is not readable by Home Assistant."
+                  : this._pathStatus.parent_writable
+                    ? "apps.yaml does not exist yet. Home Assistant can still create it on export, but file-based import is not possible."
+                    : "apps.yaml does not exist and Home Assistant cannot write to the configured directory."}
+                ${this._pathStatus.error
+                  ? html`<div class="hint">${this._pathStatus.error}</div>`
+                  : ""}
+                Use
+                <button class="link-btn" @click=${() => { this._tab = "paste"; }}>
+                  paste-based import
+                </button>
+                instead.
                 instead.
               </div>
             `
