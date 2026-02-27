@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.3 — 2026-02-27
+
+### Fixed
+
+- **Blocking I/O warning** — Moved `manifest.json` version read from inside
+  `async_setup_entry` to module level, eliminating the HA event loop blocking
+  call warning (`homeassistant.util.loop: Detected blocking call to read_text`).
+
 ## 0.4.2 — 2026-02-26
 
 ### Improved

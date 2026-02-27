@@ -18,6 +18,10 @@ from .storage import NsPanelStorage
 from .websocket_api import async_register_websocket_commands
 
 _MANIFEST_PATH = Path(__file__).parent / "manifest.json"
+try:
+    _VERSION = json.loads(_MANIFEST_PATH.read_text())["version"]
+except Exception:
+    _VERSION = "0"
 
 try:
     from homeassistant.components.http import StaticPathConfig
@@ -71,12 +75,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     elif hasattr(hass.http, "register_static_path"):
         hass.http.register_static_path(url_path, str(frontend_path), False)
 
-    # Read version from manifest.json for cache busting
-    try:
-        version = json.loads(_MANIFEST_PATH.read_text())["version"]
-    except Exception:
-        version = "0"
-
     # Register sidebar panel
     frontend.async_register_built_in_panel(
         hass,
@@ -88,7 +86,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "name": "nspanel-lovelace-editor",
             "embed_iframe": False,
             "trust_external": False,
-            "js_url": f"{url_path}/entrypoint.js?v={version}",
+            "js_url": f"{url_path}/entrypoint.js?v={_VERSION}",
         }},
         require_admin=True,
     )
