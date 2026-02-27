@@ -28,6 +28,7 @@ export class NspPanelEditor extends LitElement {
   @state() private _loading = true;
   @state() private _saving = false;
   @state() private _saveError: string | null = null;
+  @state() private _deleteError: string | null = null;
   @state() private _error: string | null = null;
   @state() private _dirty = false;
   @state() private _saveSuccess = false;
@@ -125,7 +126,7 @@ export class NspPanelEditor extends LitElement {
       this._fireBack();
     } catch (err: any) {
       this._confirmDelete = false;
-      this._exportStatus = { type: "error", message: err.message || "Delete failed" };
+      this._deleteError = err.message || "Delete failed";
     }
   }
 
@@ -229,6 +230,15 @@ export class NspPanelEditor extends LitElement {
               <div class="status-banner error">
                 Save failed: ${this._saveError}
                 <button class="dismiss" @click=${() => { this._saveError = null; }}>&times;</button>
+              </div>
+            `
+          : ""}
+
+        ${this._deleteError
+          ? html`
+              <div class="status-banner error">
+                Delete failed: ${this._deleteError}
+                <button class="dismiss" @click=${() => { this._deleteError = null; }}>&times;</button>
               </div>
             `
           : ""}

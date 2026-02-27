@@ -4,12 +4,17 @@ import type { HomeAssistant } from "../models/types";
 
 type ImportTab = "file" | "paste";
 
+/** Matches the dict returned by yaml_io.check_yaml_path(). */
 interface PathStatus {
-  accessible: boolean;
+  path?: string;
+  exists: boolean;
   readable: boolean;
   writable: boolean;
-  error?: string;
+  parent_writable: boolean;
+  error?: string | null;
 }
+
+type StatusMsg = { type: "success" | "error"; message: string };
 
 @customElement("nsp-import-export")
 export class NspImportExport extends LitElement {
@@ -18,7 +23,8 @@ export class NspImportExport extends LitElement {
   @state() private _tab: ImportTab = "file";
   @state() private _pasteText = "";
   @state() private _loading = false;
-  @state() private _status: { type: "success" | "error"; message: string } | null = null;
+  @state() private _importStatus: StatusMsg | null = null;
+  @state() private _exportStatus: StatusMsg | null = null;
   @state() private _pathStatus: PathStatus | null = null;
   @state() private _checkingPath = false;
   @state() private _yamlPreview = "";
@@ -34,9 +40,10 @@ export class NspImportExport extends LitElement {
   private async _checkPath() {
     this._checkingPath = true;
     try {
-      const result = await this.hass.callWS({ type: "nspanel_editor/check_yaml_path" });
+      const result: PathStatus = await this.hass.callWS({ type: "nspanel_editor/check_yaml_path" });
       this._pathStatus = result;
-      if (!result.accessible) this._tab = "paste";
+      // Derive accessibility: file must exist and be readable
+      if (!result.exists || !result.readable) this._tab = "paste";
     } catch {
       this._pathStatus = null;
       this._tab = "paste";
@@ -46,16 +53,16 @@ export class NspImportExport extends LitElement {
 
   private async _importFromFile() {
     this._loading = true;
-    this._status = null;
+    this._importStatus = null;
     try {
       const result = await this.hass.callWS({ type: "nspanel_editor/import_yaml" });
-      this._status = {
+      this._importStatus = {
         type: "success",
         message: `Imported ${result.count} panel(s): ${result.imported.join(", ")}`,
       };
       this._fireRefresh();
     } catch (err: any) {
-      this._status = { type: "error", message: err.message || "Import failed" };
+      this._importStatus = { type: "error", message: err.message || "Import failed" };
     }
     this._loading = false;
   }
@@ -63,20 +70,20 @@ export class NspImportExport extends LitElement {
   private async _importFromPaste() {
     if (!this._pasteText.trim()) return;
     this._loading = true;
-    this._status = null;
+    this._importStatus = null;
     try {
       const result = await this.hass.callWS({
         type: "nspanel_editor/import_yaml_text",
         yaml_text: this._pasteText,
       });
-      this._status = {
+      this._importStatus = {
         type: "success",
         message: `Imported ${result.count} panel(s): ${result.imported.join(", ")}`,
       };
       this._pasteText = "";
       this._fireRefresh();
     } catch (err: any) {
-      this._status = { type: "error", message: err.message || "Import failed" };
+      this._importStatus = { type: "error", message: err.message || "Import failed" };
     }
     this._loading = false;
   }
@@ -88,17 +95,17 @@ export class NspImportExport extends LitElement {
       const result = await this.hass.callWS({ type: "nspanel_editor/preview_yaml" });
       this._yamlPreview = result.yaml || "";
     } catch (err: any) {
-      this._status = { type: "error", message: err.message || "Failed to load YAML preview" };
+      this._exportStatus = { type: "error", message: err.message || "Failed to load YAML preview" };
     }
     this._previewLoading = false;
   }
 
   private async _exportToFile() {
     this._loading = true;
-    this._status = null;
+    this._exportStatus = null;
     try {
       const result = await this.hass.callWS({ type: "nspanel_editor/export_yaml" });
-      this._status = {
+      this._exportStatus = {
         type: "success",
         message: `Exported ${result.count} panel(s) to apps.yaml: ${result.exported.join(", ")}`,
       };
@@ -110,7 +117,7 @@ export class NspImportExport extends LitElement {
       } else if (code === "not_configured") {
         hint = " Configure the AppDaemon apps.yaml path in the integration settings.";
       }
-      this._status = { type: "error", message: (err.message || "Export failed") + hint };
+      this._exportStatus = { type: "error", message: (err.message || "Export failed") + hint };
     }
     this._loading = false;
   }
@@ -149,11 +156,11 @@ export class NspImportExport extends LitElement {
               @click=${() => { this._tab = "paste"; }}
             >Paste YAML</button>
           </div>
-          ${this._status
+          ${this._importStatus
             ? html`
-                <div class="status-banner ${this._status.type}">
-                  ${this._status.message}
-                  <button class="dismiss" @click=${() => { this._status = null; }}>&times;</button>
+                <div class="status-banner ${this._importStatus.type}">
+                  ${this._importStatus.message}
+                  <button class="dismiss" @click=${() => { this._importStatus = null; }}>&times;</button>
                 </div>
               `
             : ""}
@@ -172,14 +179,14 @@ export class NspImportExport extends LitElement {
   }
 
   private _renderFileImport() {
-    const pathOk = this._pathStatus?.readable;
+    const pathOk = this._pathStatus?.exists && this._pathStatus?.readable;
     return html`
       <div class="tab-content">
         <p class="description">Import all NSPanel configurations from the configured apps.yaml file.</p>
         ${this._checkingPath
           ? html`<div class="hint">Checking apps.yaml accessibility…</div>`
           : ""}
-        ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.accessible
+        ${!this._checkingPath && this._pathStatus !== null && (!this._pathStatus.exists || !this._pathStatus.readable)
           ? html`
               <div class="warning">
                 ⚠ apps.yaml is not accessible from Home Assistant.
@@ -244,6 +251,14 @@ export class NspImportExport extends LitElement {
             @click=${this._exportToFile}
           >${this._loading ? "Exporting…" : "Export to apps.yaml"}</button>
         </div>
+        ${this._exportStatus
+          ? html`
+              <div class="status-banner ${this._exportStatus.type}">
+                ${this._exportStatus.message}
+                <button class="dismiss" @click=${() => { this._exportStatus = null; }}>&times;</button>
+              </div>
+            `
+          : ""}
         ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.writable
           ? html`
               <div class="warning">

@@ -257,9 +257,9 @@ export class NspPanelList extends LitElement {
         <div class="card-actions" @click=${(e: Event) => e.stopPropagation()}>
           ${!isDeleting && !isCloning && !isRenaming
             ? html`
-                <button class="btn-icon" title="Rename" @click=${() => { this._pendingRename = id; this._renameNewId = id; this._renameError = null; }}>✏️</button>
-                <button class="btn-icon" title="Clone" @click=${() => { this._pendingClone = id; this._cloneNewId = ""; this._cloneError = null; }}>⧉</button>
-                <button class="btn-icon btn-danger" title="Delete" @click=${() => { this._pendingDelete = id; }}>🗑</button>
+                <button class="btn-icon" title="Rename" aria-label="Rename panel ${id}" @click=${() => { this._pendingRename = id; this._renameNewId = id; this._renameError = null; }}>✏️</button>
+                <button class="btn-icon" title="Clone" aria-label="Clone panel ${id}" @click=${() => { this._pendingClone = id; this._cloneNewId = ""; this._cloneError = null; }}>⧉</button>
+                <button class="btn-icon btn-danger" title="Delete" aria-label="Delete panel ${id}" @click=${() => { this._pendingDelete = id; }}>🗑</button>
               `
             : ""}
         </div>

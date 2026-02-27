@@ -98,7 +98,8 @@ let NspImportExport = class NspImportExport extends i$1 {
         this._tab = "file";
         this._pasteText = "";
         this._loading = false;
-        this._status = null;
+        this._importStatus = null;
+        this._exportStatus = null;
         this._pathStatus = null;
         this._checkingPath = false;
         this._yamlPreview = "";
@@ -115,7 +116,8 @@ let NspImportExport = class NspImportExport extends i$1 {
         try {
             const result = await this.hass.callWS({ type: "nspanel_editor/check_yaml_path" });
             this._pathStatus = result;
-            if (!result.accessible)
+            // Derive accessibility: file must exist and be readable
+            if (!result.exists || !result.readable)
                 this._tab = "paste";
         }
         catch {
@@ -126,17 +128,17 @@ let NspImportExport = class NspImportExport extends i$1 {
     }
     async _importFromFile() {
         this._loading = true;
-        this._status = null;
+        this._importStatus = null;
         try {
             const result = await this.hass.callWS({ type: "nspanel_editor/import_yaml" });
-            this._status = {
+            this._importStatus = {
                 type: "success",
                 message: `Imported ${result.count} panel(s): ${result.imported.join(", ")}`,
             };
             this._fireRefresh();
         }
         catch (err) {
-            this._status = { type: "error", message: err.message || "Import failed" };
+            this._importStatus = { type: "error", message: err.message || "Import failed" };
         }
         this._loading = false;
     }
@@ -144,13 +146,13 @@ let NspImportExport = class NspImportExport extends i$1 {
         if (!this._pasteText.trim())
             return;
         this._loading = true;
-        this._status = null;
+        this._importStatus = null;
         try {
             const result = await this.hass.callWS({
                 type: "nspanel_editor/import_yaml_text",
                 yaml_text: this._pasteText,
             });
-            this._status = {
+            this._importStatus = {
                 type: "success",
                 message: `Imported ${result.count} panel(s): ${result.imported.join(", ")}`,
             };
@@ -158,7 +160,7 @@ let NspImportExport = class NspImportExport extends i$1 {
             this._fireRefresh();
         }
         catch (err) {
-            this._status = { type: "error", message: err.message || "Import failed" };
+            this._importStatus = { type: "error", message: err.message || "Import failed" };
         }
         this._loading = false;
     }
@@ -170,16 +172,16 @@ let NspImportExport = class NspImportExport extends i$1 {
             this._yamlPreview = result.yaml || "";
         }
         catch (err) {
-            this._status = { type: "error", message: err.message || "Failed to load YAML preview" };
+            this._exportStatus = { type: "error", message: err.message || "Failed to load YAML preview" };
         }
         this._previewLoading = false;
     }
     async _exportToFile() {
         this._loading = true;
-        this._status = null;
+        this._exportStatus = null;
         try {
             const result = await this.hass.callWS({ type: "nspanel_editor/export_yaml" });
-            this._status = {
+            this._exportStatus = {
                 type: "success",
                 message: `Exported ${result.count} panel(s) to apps.yaml: ${result.exported.join(", ")}`,
             };
@@ -193,7 +195,7 @@ let NspImportExport = class NspImportExport extends i$1 {
             else if (code === "not_configured") {
                 hint = " Configure the AppDaemon apps.yaml path in the integration settings.";
             }
-            this._status = { type: "error", message: (err.message || "Export failed") + hint };
+            this._exportStatus = { type: "error", message: (err.message || "Export failed") + hint };
         }
         this._loading = false;
     }
@@ -229,11 +231,11 @@ let NspImportExport = class NspImportExport extends i$1 {
               @click=${() => { this._tab = "paste"; }}
             >Paste YAML</button>
           </div>
-          ${this._status
+          ${this._importStatus
             ? b `
-                <div class="status-banner ${this._status.type}">
-                  ${this._status.message}
-                  <button class="dismiss" @click=${() => { this._status = null; }}>&times;</button>
+                <div class="status-banner ${this._importStatus.type}">
+                  ${this._importStatus.message}
+                  <button class="dismiss" @click=${() => { this._importStatus = null; }}>&times;</button>
                 </div>
               `
             : ""}
@@ -251,14 +253,14 @@ let NspImportExport = class NspImportExport extends i$1 {
     `;
     }
     _renderFileImport() {
-        const pathOk = this._pathStatus?.readable;
+        const pathOk = this._pathStatus?.exists && this._pathStatus?.readable;
         return b `
       <div class="tab-content">
         <p class="description">Import all NSPanel configurations from the configured apps.yaml file.</p>
         ${this._checkingPath
             ? b `<div class="hint">Checking apps.yaml accessibility…</div>`
             : ""}
-        ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.accessible
+        ${!this._checkingPath && this._pathStatus !== null && (!this._pathStatus.exists || !this._pathStatus.readable)
             ? b `
               <div class="warning">
                 ⚠ apps.yaml is not accessible from Home Assistant.
@@ -321,6 +323,14 @@ let NspImportExport = class NspImportExport extends i$1 {
             @click=${this._exportToFile}
           >${this._loading ? "Exporting…" : "Export to apps.yaml"}</button>
         </div>
+        ${this._exportStatus
+            ? b `
+              <div class="status-banner ${this._exportStatus.type}">
+                ${this._exportStatus.message}
+                <button class="dismiss" @click=${() => { this._exportStatus = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
         ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.writable
             ? b `
               <div class="warning">
@@ -485,7 +495,10 @@ __decorate([
 ], NspImportExport.prototype, "_loading", void 0);
 __decorate([
     r()
-], NspImportExport.prototype, "_status", void 0);
+], NspImportExport.prototype, "_importStatus", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_exportStatus", void 0);
 __decorate([
     r()
 ], NspImportExport.prototype, "_pathStatus", void 0);
@@ -763,9 +776,9 @@ let NspPanelList = class NspPanelList extends i$1 {
         <div class="card-actions" @click=${(e) => e.stopPropagation()}>
           ${!isDeleting && !isCloning && !isRenaming
             ? b `
-                <button class="btn-icon" title="Rename" @click=${() => { this._pendingRename = id; this._renameNewId = id; this._renameError = null; }}>✏️</button>
-                <button class="btn-icon" title="Clone" @click=${() => { this._pendingClone = id; this._cloneNewId = ""; this._cloneError = null; }}>⧉</button>
-                <button class="btn-icon btn-danger" title="Delete" @click=${() => { this._pendingDelete = id; }}>🗑</button>
+                <button class="btn-icon" title="Rename" aria-label="Rename panel ${id}" @click=${() => { this._pendingRename = id; this._renameNewId = id; this._renameError = null; }}>✏️</button>
+                <button class="btn-icon" title="Clone" aria-label="Clone panel ${id}" @click=${() => { this._pendingClone = id; this._cloneNewId = ""; this._cloneError = null; }}>⧉</button>
+                <button class="btn-icon btn-danger" title="Delete" aria-label="Delete panel ${id}" @click=${() => { this._pendingDelete = id; }}>🗑</button>
               `
             : ""}
         </div>
@@ -4261,6 +4274,7 @@ let NspPanelEditor = class NspPanelEditor extends i$1 {
         this._loading = true;
         this._saving = false;
         this._saveError = null;
+        this._deleteError = null;
         this._error = null;
         this._dirty = false;
         this._saveSuccess = false;
@@ -4360,7 +4374,7 @@ let NspPanelEditor = class NspPanelEditor extends i$1 {
         }
         catch (err) {
             this._confirmDelete = false;
-            this._exportStatus = { type: "error", message: err.message || "Delete failed" };
+            this._deleteError = err.message || "Delete failed";
         }
     }
     _fireBack() {
@@ -4462,6 +4476,15 @@ let NspPanelEditor = class NspPanelEditor extends i$1 {
               <div class="status-banner error">
                 Save failed: ${this._saveError}
                 <button class="dismiss" @click=${() => { this._saveError = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
+
+        ${this._deleteError
+            ? b `
+              <div class="status-banner error">
+                Delete failed: ${this._deleteError}
+                <button class="dismiss" @click=${() => { this._deleteError = null; }}>&times;</button>
               </div>
             `
             : ""}
@@ -4758,6 +4781,9 @@ __decorate([
 __decorate([
     r()
 ], NspPanelEditor.prototype, "_saveError", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_deleteError", void 0);
 __decorate([
     r()
 ], NspPanelEditor.prototype, "_error", void 0);
