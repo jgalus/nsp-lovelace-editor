@@ -32,39 +32,39 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$2=globalThis,e$2=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$2=Symbol(),o$4=new WeakMap;let n$3 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$2)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$2&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}};const r$4=t=>new n$3("string"==typeof t?t:t+"",void 0,s$2),i$3=(t,...e)=>{const o=1===t.length?t[0]:e.reduce((e,s,o)=>e+(t=>{if(true===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1],t[0]);return new n$3(o,t,s$2)},S$1=(s,o)=>{if(e$2)s.adoptedStyleSheets=o.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$2=e$2?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
+const t$3=globalThis,e$4=t$3.ShadowRoot&&(void 0===t$3.ShadyCSS||t$3.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$2=Symbol(),o$5=new WeakMap;let n$3 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$2)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$4&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$5.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$5.set(s,t));}return t}toString(){return this.cssText}};const r$4=t=>new n$3("string"==typeof t?t:t+"",void 0,s$2),i$4=(t,...e)=>{const o=1===t.length?t[0]:e.reduce((e,s,o)=>e+(t=>{if(true===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1],t[0]);return new n$3(o,t,s$2)},S$1=(s,o)=>{if(e$4)s.adoptedStyleSheets=o.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const e of o){const o=document.createElement("style"),n=t$3.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$2=e$4?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$2,defineProperty:e$1,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$2}=Object,a$1=globalThis,c$1=a$1.trustedTypes,l$1=c$1?c$1.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$1:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$2(t,s),b$1={attribute:true,type:String,converter:u$1,reflect:false,useDefault:false,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;let y$1 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$1(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$2(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$2(s));}else void 0!==s&&i.push(c$2(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach(t=>t.hostConnected?.());}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.());}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i,e=false,h){if(void 0!==t){const r=this.constructor;if(false===e&&(h=this[t]),i??=r.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(r._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM();}updated(t){}firstUpdated(t){}};y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.2");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$1=globalThis,i$1=t=>t,s$1=t$1.trustedTypes,e=s$1?s$1.createPolicy("lit-html",{createHTML:t=>t}):void 0,h="$lit$",o$2=`lit$${Math.random().toFixed(9).slice(2)}$`,n$1="?"+o$2,r$2=`<${n$1}>`,l=document,c=()=>l.createComment(""),a=t=>null===t||"object"!=typeof t&&"function"!=typeof t,u=Array.isArray,d=t=>u(t)||"function"==typeof t?.[Symbol.iterator],f="[ \t\n\f\r]",v=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,_=/-->/g,m=/>/g,p=RegExp(`>|${f}(?:([^\\s"'>=/]+)(${f}*=${f}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),g=/'/g,$=/"/g,y=/^(?:script|style|textarea|title)$/i,x=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),b=x(1),E=Symbol.for("lit-noChange"),A=Symbol.for("lit-nothing"),C=new WeakMap,P=l.createTreeWalker(l,129);function V(t,i){if(!u(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==e?e.createHTML(i):i}const N=(t,i)=>{const s=t.length-1,e=[];let n,l=2===i?"<svg>":3===i?"<math>":"",c=v;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,f=0;for(;f<s.length&&(c.lastIndex=f,u=c.exec(s),null!==u);)f=c.lastIndex,c===v?"!--"===u[1]?c=_:void 0!==u[1]?c=m:void 0!==u[2]?(y.test(u[2])&&(n=RegExp("</"+u[2],"g")),c=p):void 0!==u[3]&&(c=p):c===p?">"===u[0]?(c=n??v,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?p:'"'===u[3]?$:g):c===$||c===g?c=p:c===_||c===m?c=v:(c=p,n=void 0);const x=c===p&&t[i+1].startsWith("/>")?" ":"";l+=c===v?s+r$2:d>=0?(e.push(a),s.slice(0,d)+h+s.slice(d)+o$2+x):s+o$2+(-2===d?i:x);}return [V(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),e]};class S{constructor({strings:t,_$litType$:i},e){let r;this.parts=[];let l=0,a=0;const u=t.length-1,d=this.parts,[f,v]=N(t,i);if(this.el=S.createElement(f,e),P.currentNode=this.el.content,2===i||3===i){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=P.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(h)){const i=v[a++],s=r.getAttribute(t).split(o$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:l,name:e[2],strings:s,ctor:"."===e[1]?I:"?"===e[1]?L:"@"===e[1]?z:H}),r.removeAttribute(t);}else t.startsWith(o$2)&&(d.push({type:6,index:l}),r.removeAttribute(t));if(y.test(r.tagName)){const t=r.textContent.split(o$2),i=t.length-1;if(i>0){r.textContent=s$1?s$1.emptyScript:"";for(let s=0;s<i;s++)r.append(t[s],c()),P.nextNode(),d.push({type:2,index:++l});r.append(t[i],c());}}}else if(8===r.nodeType)if(r.data===n$1)d.push({type:2,index:l});else {let t=-1;for(;-1!==(t=r.data.indexOf(o$2,t+1));)d.push({type:7,index:l}),t+=o$2.length-1;}l++;}}static createElement(t,i){const s=l.createElement("template");return s.innerHTML=t,s}}function M(t,i,s=t,e){if(i===E)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=a(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=M(t,h._$AS(t,i.values),h,e)),i}class R{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??l).importNode(i,true);P.currentNode=e;let h=P.nextNode(),o=0,n=0,r=s[0];for(;void 0!==r;){if(o===r.index){let i;2===r.type?i=new k(h,h.nextSibling,this,t):1===r.type?i=new r.ctor(h,r.name,r.strings,this,t):6===r.type&&(i=new Z(h,this,t)),this._$AV.push(i),r=s[++n];}o!==r?.index&&(h=P.nextNode(),o++);}return P.currentNode=l,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class k{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=A,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=M(this,t,i),a(t)?t===A||null==t||""===t?(this._$AH!==A&&this._$AR(),this._$AH=A):t!==this._$AH&&t!==E&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):d(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==A&&a(this._$AH)?this._$AA.nextSibling.data=t:this.T(l.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=S.createElement(V(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new R(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=C.get(t.strings);return void 0===i&&C.set(t.strings,i=new S(t)),i}k(t){u(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new k(this.O(c()),this.O(c()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,s){for(this._$AP?.(false,true,s);t!==this._$AB;){const s=i$1(t).nextSibling;i$1(t).remove(),t=s;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class H{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=A,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=A;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=M(this,t,i,0),o=!a(t)||t!==this._$AH&&t!==E,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=M(this,e[s+n],i,n),r===E&&(r=this._$AH[n]),o||=!a(r)||r!==this._$AH[n],r===A?t=A:t!==A&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===A?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class I extends H{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===A?void 0:t;}}class L extends H{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==A);}}class z extends H{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=M(this,t,i,0)??A)===E)return;const s=this._$AH,e=t===A&&s!==A||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==A&&(s===A||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class Z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){M(this,t);}}const B=t$1.litHtmlPolyfillSupport;B?.(S,k),(t$1.litHtmlVersions??=[]).push("3.3.2");const D=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new k(i.insertBefore(c(),t),t,void 0,s??{});}return h._$AI(t),h};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const s=globalThis;class i extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=D(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(true);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(false);}render(){return E}}i._$litElement$=true,i["finalized"]=true,s.litElementHydrateSupport?.({LitElement:i});const o$1=s.litElementPolyfillSupport;o$1?.({LitElement:i});(s.litElementVersions??=[]).push("4.2.2");
+ */const{is:i$3,defineProperty:e$3,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$4,getPrototypeOf:n$2}=Object,a$1=globalThis,c$1=a$1.trustedTypes,l$1=c$1?c$1.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$1:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$3(t,s),b$1={attribute:true,type:String,converter:u$1,reflect:false,useDefault:false,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;let y$1 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$3(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$2(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$4(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$2(s));}else void 0!==s&&i.push(c$2(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach(t=>t.hostConnected?.());}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.());}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i,e=false,h){if(void 0!==t){const r=this.constructor;if(false===e&&(h=this[t]),i??=r.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(r._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM();}updated(t){}firstUpdated(t){}};y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.2");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t=t=>(e,o)=>{ void 0!==o?o.addInitializer(()=>{customElements.define(t,e);}):customElements.define(t,e);};
+const t$2=globalThis,i$2=t=>t,s$1=t$2.trustedTypes,e$2=s$1?s$1.createPolicy("lit-html",{createHTML:t=>t}):void 0,h="$lit$",o$3=`lit$${Math.random().toFixed(9).slice(2)}$`,n$1="?"+o$3,r$2=`<${n$1}>`,l=document,c=()=>l.createComment(""),a=t=>null===t||"object"!=typeof t&&"function"!=typeof t,u=Array.isArray,d=t=>u(t)||"function"==typeof t?.[Symbol.iterator],f="[ \t\n\f\r]",v=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,_=/-->/g,m=/>/g,p=RegExp(`>|${f}(?:([^\\s"'>=/]+)(${f}*=${f}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),g=/'/g,$=/"/g,y=/^(?:script|style|textarea|title)$/i,x=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),b=x(1),E=Symbol.for("lit-noChange"),A=Symbol.for("lit-nothing"),C=new WeakMap,P=l.createTreeWalker(l,129);function V(t,i){if(!u(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==e$2?e$2.createHTML(i):i}const N=(t,i)=>{const s=t.length-1,e=[];let n,l=2===i?"<svg>":3===i?"<math>":"",c=v;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,f=0;for(;f<s.length&&(c.lastIndex=f,u=c.exec(s),null!==u);)f=c.lastIndex,c===v?"!--"===u[1]?c=_:void 0!==u[1]?c=m:void 0!==u[2]?(y.test(u[2])&&(n=RegExp("</"+u[2],"g")),c=p):void 0!==u[3]&&(c=p):c===p?">"===u[0]?(c=n??v,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?p:'"'===u[3]?$:g):c===$||c===g?c=p:c===_||c===m?c=v:(c=p,n=void 0);const x=c===p&&t[i+1].startsWith("/>")?" ":"";l+=c===v?s+r$2:d>=0?(e.push(a),s.slice(0,d)+h+s.slice(d)+o$3+x):s+o$3+(-2===d?i:x);}return [V(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),e]};class S{constructor({strings:t,_$litType$:i},e){let r;this.parts=[];let l=0,a=0;const u=t.length-1,d=this.parts,[f,v]=N(t,i);if(this.el=S.createElement(f,e),P.currentNode=this.el.content,2===i||3===i){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=P.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(h)){const i=v[a++],s=r.getAttribute(t).split(o$3),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:l,name:e[2],strings:s,ctor:"."===e[1]?I:"?"===e[1]?L:"@"===e[1]?z:H}),r.removeAttribute(t);}else t.startsWith(o$3)&&(d.push({type:6,index:l}),r.removeAttribute(t));if(y.test(r.tagName)){const t=r.textContent.split(o$3),i=t.length-1;if(i>0){r.textContent=s$1?s$1.emptyScript:"";for(let s=0;s<i;s++)r.append(t[s],c()),P.nextNode(),d.push({type:2,index:++l});r.append(t[i],c());}}}else if(8===r.nodeType)if(r.data===n$1)d.push({type:2,index:l});else {let t=-1;for(;-1!==(t=r.data.indexOf(o$3,t+1));)d.push({type:7,index:l}),t+=o$3.length-1;}l++;}}static createElement(t,i){const s=l.createElement("template");return s.innerHTML=t,s}}function M(t,i,s=t,e){if(i===E)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=a(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=M(t,h._$AS(t,i.values),h,e)),i}class R{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??l).importNode(i,true);P.currentNode=e;let h=P.nextNode(),o=0,n=0,r=s[0];for(;void 0!==r;){if(o===r.index){let i;2===r.type?i=new k(h,h.nextSibling,this,t):1===r.type?i=new r.ctor(h,r.name,r.strings,this,t):6===r.type&&(i=new Z(h,this,t)),this._$AV.push(i),r=s[++n];}o!==r?.index&&(h=P.nextNode(),o++);}return P.currentNode=l,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class k{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=A,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=M(this,t,i),a(t)?t===A||null==t||""===t?(this._$AH!==A&&this._$AR(),this._$AH=A):t!==this._$AH&&t!==E&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):d(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==A&&a(this._$AH)?this._$AA.nextSibling.data=t:this.T(l.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=S.createElement(V(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new R(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=C.get(t.strings);return void 0===i&&C.set(t.strings,i=new S(t)),i}k(t){u(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new k(this.O(c()),this.O(c()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,s){for(this._$AP?.(false,true,s);t!==this._$AB;){const s=i$2(t).nextSibling;i$2(t).remove(),t=s;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class H{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=A,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=A;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=M(this,t,i,0),o=!a(t)||t!==this._$AH&&t!==E,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=M(this,e[s+n],i,n),r===E&&(r=this._$AH[n]),o||=!a(r)||r!==this._$AH[n],r===A?t=A:t!==A&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===A?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class I extends H{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===A?void 0:t;}}class L extends H{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==A);}}class z extends H{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=M(this,t,i,0)??A)===E)return;const s=this._$AH,e=t===A&&s!==A||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==A&&(s===A||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class Z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){M(this,t);}}const B=t$2.litHtmlPolyfillSupport;B?.(S,k),(t$2.litHtmlVersions??=[]).push("3.3.2");const D=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new k(i.insertBefore(c(),t),t,void 0,s??{});}return h._$AI(t),h};
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const o={attribute:true,type:String,converter:u$1,reflect:false,hasChanged:f$1},r$1=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=true),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t,true,r);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t,true,r);}}throw Error("Unsupported decorator location: "+n)};function n(t){return (e,o)=>"object"==typeof o?r$1(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+ */const s=globalThis;let i$1 = class i extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=D(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(true);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(false);}render(){return E}};i$1._$litElement$=true,i$1["finalized"]=true,s.litElementHydrateSupport?.({LitElement:i$1});const o$2=s.litElementPolyfillSupport;o$2?.({LitElement:i$1});(s.litElementVersions??=[]).push("4.2.2");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$1=t=>(e,o)=>{ void 0!==o?o.addInitializer(()=>{customElements.define(t,e);}):customElements.define(t,e);};
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */const o$1={attribute:true,type:String,converter:u$1,reflect:false,hasChanged:f$1},r$1=(t=o$1,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=true),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t,true,r);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t,true,r);}}throw Error("Unsupported decorator location: "+n)};function n(t){return (e,o)=>"object"==typeof o?r$1(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
 
 /**
  * @license
@@ -91,242 +91,6 @@ async function loadHaComponents() {
         }
     }
 }
-
-let NspPanelList = class NspPanelList extends i {
-    constructor() {
-        super(...arguments);
-        this.panels = {};
-        this._showImportDialog = false;
-        this._importText = "";
-        this._importing = false;
-    }
-    _fireSelect(panelId) {
-        this.dispatchEvent(new CustomEvent("panel-selected", { detail: { panelId }, bubbles: true, composed: true }));
-    }
-    _fireRefresh() {
-        this.dispatchEvent(new CustomEvent("refresh-panels", { bubbles: true, composed: true }));
-    }
-    async _importYaml() {
-        try {
-            const result = await this.hass.callWS({ type: "nspanel_editor/import_yaml" });
-            alert(`Imported ${result.count} panel(s): ${result.imported.join(", ")}`);
-            this._fireRefresh();
-        }
-        catch (err) {
-            alert(`Import failed: ${err.message}`);
-        }
-    }
-    async _importPastedYaml() {
-        if (!this._importText.trim())
-            return;
-        this._importing = true;
-        try {
-            const result = await this.hass.callWS({
-                type: "nspanel_editor/import_yaml_text",
-                yaml_text: this._importText,
-            });
-            alert(`Imported ${result.count} panel(s): ${result.imported.join(", ")}`);
-            this._showImportDialog = false;
-            this._importText = "";
-            this._fireRefresh();
-        }
-        catch (err) {
-            alert(`Import failed: ${err.message}`);
-        }
-        this._importing = false;
-    }
-    async _addNewPanel() {
-        const name = prompt("Enter a name for the new panel (e.g., nspanel-bedroom):");
-        if (!name)
-            return;
-        try {
-            await this.hass.callWS({
-                type: "nspanel_editor/save_panel",
-                panel_id: name,
-                config: {
-                    panelRecvTopic: `cmnd/${name}/CustomSend`,
-                    panelSendTopic: `tele/${name}/RESULT`,
-                    model: "eu",
-                    updateMode: "auto-notify",
-                    locale: "en_US",
-                },
-                cards: [],
-                hiddenCards: [],
-                screensaver: {},
-            });
-            this._fireRefresh();
-        }
-        catch (err) {
-            alert(`Failed to create panel: ${err.message}`);
-        }
-    }
-    render() {
-        const panelIds = Object.keys(this.panels);
-        return b `
-      <div class="panel-list">
-        <div class="header">
-          <h1>NSPanel Lovelace Editor</h1>
-          <div class="actions">
-            <button class="btn btn-primary" @click=${this._addNewPanel}>+ New Panel</button>
-            <button class="btn" @click=${this._importYaml}>Import from apps.yaml</button>
-            <button class="btn" @click=${() => { this._showImportDialog = true; }}>Import from pasted YAML</button>
-          </div>
-        </div>
-
-        ${this._showImportDialog ? this._renderImportDialog() : ""}
-
-        ${panelIds.length === 0
-            ? b `
-              <div class="empty-state">
-                <p>No NSPanel configurations found.</p>
-                <p>Import from an existing apps.yaml, paste YAML, or create a new panel.</p>
-              </div>
-            `
-            : b `
-              <div class="panel-grid">
-                ${panelIds.map((id) => this._renderPanelCard(id, this.panels[id]))}
-              </div>
-            `}
-      </div>
-    `;
-    }
-    _renderImportDialog() {
-        return b `
-      <div class="import-dialog">
-        <h3>Paste apps.yaml content</h3>
-        <textarea rows="12" placeholder="Paste your apps.yaml content here..."
-          .value=${this._importText}
-          @input=${(e) => { this._importText = e.target.value; }}></textarea>
-        <div class="dialog-actions">
-          <button class="btn" @click=${() => { this._showImportDialog = false; this._importText = ""; }}>Cancel</button>
-          <button class="btn btn-primary" ?disabled=${this._importing || !this._importText.trim()}
-            @click=${this._importPastedYaml}>
-            ${this._importing ? "Importing..." : "Import"}
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    _renderPanelCard(id, panel) {
-        return b `
-      <div class="panel-card" @click=${() => this._fireSelect(id)}>
-        <h3>${id}</h3>
-        <div class="panel-info">
-          <span>Model: ${panel.model?.toUpperCase() || "EU"}</span>
-          <span>Cards: ${panel.card_count}</span>
-          ${panel.hidden_card_count > 0
-            ? b `<span>Hidden: ${panel.hidden_card_count}</span>`
-            : ""}
-          ${panel.has_screensaver
-            ? b `<span class="badge">Screensaver</span>`
-            : ""}
-        </div>
-      </div>
-    `;
-    }
-};
-NspPanelList.styles = i$3 `
-    :host { display: block; }
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-    .header h1 { margin: 0; flex: 1; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn {
-      padding: 8px 16px;
-      border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 4px;
-      background: var(--card-background-color, white);
-      color: var(--primary-text-color);
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .btn:hover { background: var(--secondary-background-color, #f5f5f5); }
-    .btn-primary {
-      background: var(--primary-color, #03a9f4);
-      color: white;
-      border-color: var(--primary-color, #03a9f4);
-    }
-    .btn-primary:hover { opacity: 0.9; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .panel-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-    }
-    .panel-card {
-      background: var(--card-background-color, white);
-      border-radius: 8px;
-      padding: 16px;
-      cursor: pointer;
-      border: 1px solid var(--divider-color, #e0e0e0);
-      transition: box-shadow 0.2s;
-    }
-    .panel-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
-    .panel-card h3 { margin: 0 0 8px 0; }
-    .panel-info {
-      display: flex;
-      gap: 12px;
-      color: var(--secondary-text-color, #727272);
-      font-size: 14px;
-      flex-wrap: wrap;
-    }
-    .badge {
-      background: var(--primary-color, #03a9f4);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 48px;
-      color: var(--secondary-text-color, #727272);
-    }
-    .import-dialog {
-      background: var(--card-background-color, white);
-      border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .import-dialog h3 { margin: 0 0 12px; }
-    .import-dialog textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 4px;
-      font-family: "Fira Code", "Consolas", monospace;
-      font-size: 13px;
-      resize: vertical;
-      background: var(--card-background-color, white);
-      color: var(--primary-text-color);
-    }
-    .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-  `;
-__decorate([
-    n({ attribute: false })
-], NspPanelList.prototype, "hass", void 0);
-__decorate([
-    n({ attribute: false })
-], NspPanelList.prototype, "panels", void 0);
-__decorate([
-    r()
-], NspPanelList.prototype, "_showImportDialog", void 0);
-__decorate([
-    r()
-], NspPanelList.prototype, "_importText", void 0);
-__decorate([
-    r()
-], NspPanelList.prototype, "_importing", void 0);
-NspPanelList = __decorate([
-    t("nsp-panel-list")
-], NspPanelList);
 
 /**
  * TypeScript type definitions mirroring the backend schema.
@@ -442,13 +206,1035 @@ function createDefaultCard(type) {
 function createDefaultEntity() {
     return { entity: "" };
 }
+function createDefaultPanelConfig() {
+    return {
+        panelRecvTopic: "cmnd/tasmota_your_mqtt_topic/CustomSend",
+        panelSendTopic: "tele/tasmota_your_mqtt_topic/RESULT",
+        model: "eu",
+        updateMode: "auto-notify",
+        locale: "en_US",
+    };
+}
+function createDefaultPanelData() {
+    return {
+        config: createDefaultPanelConfig(),
+        cards: [],
+        hiddenCards: [],
+        screensaver: {},
+    };
+}
+
+let NspImportExport = class NspImportExport extends i$1 {
+    constructor() {
+        super(...arguments);
+        this._tab = "file";
+        this._pasteText = "";
+        this._loading = false;
+        this._importStatus = null;
+        this._exportStatus = null;
+        this._pathStatus = null;
+        this._checkingPath = false;
+        this._yamlPreview = "";
+        this._previewLoading = false;
+        this._copied = false;
+        this._showExport = false;
+    }
+    async connectedCallback() {
+        super.connectedCallback();
+        await this._checkPath();
+    }
+    async _checkPath() {
+        this._checkingPath = true;
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/check_yaml_path" });
+            this._pathStatus = result;
+            // Derive accessibility: file must exist and be readable
+            if (!result.exists || !result.readable)
+                this._tab = "paste";
+        }
+        catch {
+            this._pathStatus = null;
+            this._tab = "paste";
+        }
+        this._checkingPath = false;
+    }
+    async _importFromFile() {
+        this._loading = true;
+        this._importStatus = null;
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/import_yaml" });
+            this._importStatus = {
+                type: "success",
+                message: `Imported ${result.count} panel(s): ${result.imported.join(", ")}`,
+            };
+            this._fireRefresh();
+        }
+        catch (err) {
+            this._importStatus = { type: "error", message: err.message || "Import failed" };
+        }
+        this._loading = false;
+    }
+    async _importFromPaste() {
+        if (!this._pasteText.trim())
+            return;
+        this._loading = true;
+        this._importStatus = null;
+        try {
+            const result = await this.hass.callWS({
+                type: "nspanel_editor/import_yaml_text",
+                yaml_text: this._pasteText,
+            });
+            this._importStatus = {
+                type: "success",
+                message: `Imported ${result.count} panel(s): ${result.imported.join(", ")}`,
+            };
+            this._pasteText = "";
+            this._fireRefresh();
+        }
+        catch (err) {
+            this._importStatus = { type: "error", message: err.message || "Import failed" };
+        }
+        this._loading = false;
+    }
+    async _loadPreview() {
+        this._previewLoading = true;
+        this._yamlPreview = "";
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/preview_yaml" });
+            this._yamlPreview = result.yaml || "";
+        }
+        catch (err) {
+            this._exportStatus = { type: "error", message: err.message || "Failed to load YAML preview" };
+        }
+        this._previewLoading = false;
+    }
+    async _exportToFile() {
+        this._loading = true;
+        this._exportStatus = null;
+        try {
+            const result = await this.hass.callWS({ type: "nspanel_editor/export_yaml" });
+            this._exportStatus = {
+                type: "success",
+                message: `Exported ${result.count} panel(s) to apps.yaml: ${result.exported.join(", ")}`,
+            };
+        }
+        catch (err) {
+            const code = err.code || "";
+            let hint = "";
+            if (code === "permission_denied") {
+                hint = " Ensure Home Assistant has write access to the AppDaemon directory.";
+            }
+            else if (code === "not_configured") {
+                hint = " Configure the AppDaemon apps.yaml path in the integration settings.";
+            }
+            this._exportStatus = { type: "error", message: (err.message || "Export failed") + hint };
+        }
+        this._loading = false;
+    }
+    async _copyToClipboard() {
+        try {
+            await navigator.clipboard.writeText(this._yamlPreview);
+            this._copied = true;
+            setTimeout(() => { this._copied = false; }, 2000);
+        }
+        catch { /* clipboard unavailable */ }
+    }
+    _fireRefresh() {
+        this.dispatchEvent(new CustomEvent("refresh-panels", { bubbles: true, composed: true }));
+    }
+    _toggleExport() {
+        this._showExport = !this._showExport;
+        if (this._showExport && !this._yamlPreview && !this._previewLoading) {
+            this._loadPreview();
+        }
+    }
+    render() {
+        return b `
+      <div class="import-export">
+        <div class="section">
+          <h3>Import</h3>
+          <div class="tabs">
+            <button
+              class="tab ${this._tab === "file" ? "active" : ""}"
+              @click=${() => { this._tab = "file"; }}
+            >From apps.yaml File</button>
+            <button
+              class="tab ${this._tab === "paste" ? "active" : ""}"
+              @click=${() => { this._tab = "paste"; }}
+            >Paste YAML</button>
+          </div>
+          ${this._importStatus
+            ? b `
+                <div class="status-banner ${this._importStatus.type}">
+                  ${this._importStatus.message}
+                  <button class="dismiss" @click=${() => { this._importStatus = null; }}>&times;</button>
+                </div>
+              `
+            : ""}
+          ${this._tab === "file" ? this._renderFileImport() : this._renderPasteImport()}
+        </div>
+
+        <div class="section">
+          <button
+            type="button"
+            class="section-header"
+            @click=${this._toggleExport}
+            aria-expanded=${this._showExport ? "true" : "false"}
+          >
+            <h3>Export / YAML Preview</h3>
+            <span class="chevron">${this._showExport ? "▲" : "▼"}</span>
+          </button>
+          ${this._showExport ? this._renderExport() : ""}
+        </div>
+      </div>
+    `;
+    }
+    _renderFileImport() {
+        const pathOk = this._pathStatus?.exists && this._pathStatus?.readable;
+        return b `
+      <div class="tab-content">
+        <p class="description">Import all NSPanel configurations from the configured apps.yaml file.</p>
+        ${this._checkingPath
+            ? b `<div class="hint">Checking apps.yaml accessibility…</div>`
+            : ""}
+        ${!this._checkingPath && this._pathStatus !== null && (!this._pathStatus.exists || !this._pathStatus.readable)
+            ? b `
+              <div class="warning">
+                ⚠ apps.yaml is not accessible from Home Assistant.
+                Use <button class="link-btn" @click=${() => { this._tab = "paste"; }}>paste-based import</button> instead.
+              </div>
+            `
+            : ""}
+        <button
+          class="btn btn-primary"
+          ?disabled=${this._loading || this._checkingPath || (this._pathStatus !== null && !pathOk)}
+          @click=${this._importFromFile}
+        >
+          ${this._loading ? "Importing…" : "Import from apps.yaml"}
+        </button>
+      </div>
+    `;
+    }
+    _renderPasteImport() {
+        return b `
+      <div class="tab-content">
+        <p class="description">
+          Paste the contents of your apps.yaml file. Useful for container setups
+          where the file is not directly accessible from Home Assistant.
+        </p>
+        <textarea
+          rows="10"
+          placeholder="Paste your apps.yaml content here…"
+          .value=${this._pasteText}
+          @input=${(e) => { this._pasteText = e.target.value; }}
+        ></textarea>
+        <div class="actions">
+          <button
+            class="btn btn-primary"
+            ?disabled=${this._loading || !this._pasteText.trim()}
+            @click=${this._importFromPaste}
+          >
+            ${this._loading ? "Importing…" : "Import"}
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderExport() {
+        return b `
+      <div class="tab-content">
+        <div class="export-actions">
+          <button
+            class="btn"
+            ?disabled=${this._previewLoading}
+            @click=${this._loadPreview}
+          >${this._previewLoading ? "Loading…" : "Refresh Preview"}</button>
+          <button
+            class="btn btn-primary"
+            ?disabled=${!this._yamlPreview}
+            @click=${this._copyToClipboard}
+          >${this._copied ? "Copied!" : "Copy to Clipboard"}</button>
+          <button
+            class="btn btn-export"
+            ?disabled=${this._loading || !(this._pathStatus?.writable || (!this._pathStatus?.exists && this._pathStatus?.parent_writable))}
+            @click=${this._exportToFile}
+          >${this._loading ? "Exporting…" : "Export to apps.yaml"}</button>
+        </div>
+        ${this._exportStatus
+            ? b `
+              <div class="status-banner ${this._exportStatus.type}">
+                ${this._exportStatus.message}
+                <button class="dismiss" @click=${() => { this._exportStatus = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
+        ${!this._checkingPath && this._pathStatus !== null && !this._pathStatus.writable && !(!this._pathStatus.exists && this._pathStatus.parent_writable)
+            ? b `
+              <div class="warning">
+                ⚠ apps.yaml is not writable. Copy the YAML to clipboard and paste it manually.
+              </div>
+            `
+            : ""}
+        ${this._previewLoading
+            ? b `<div class="loading">Loading YAML preview…</div>`
+            : ""}
+        ${this._yamlPreview
+            ? b `<pre><code>${this._yamlPreview}</code></pre>`
+            : ""}
+      </div>
+    `;
+    }
+};
+NspImportExport.styles = i$4 `
+    :host { display: block; }
+    .import-export { display: flex; flex-direction: column; gap: 16px; }
+    .section {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .section h3 { margin: 0 0 12px; font-size: 16px; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+    }
+    .section-header:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); border-radius: 4px; }
+    .section-header h3 { margin: 0; }
+    .chevron { color: var(--secondary-text-color); font-size: 12px; }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--divider-color, #e0e0e0);
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--secondary-text-color);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab:hover { color: var(--primary-text-color); }
+    .tab.active {
+      color: var(--primary-color, #03a9f4);
+      border-bottom-color: var(--primary-color, #03a9f4);
+      font-weight: 500;
+    }
+    .tab-content { display: flex; flex-direction: column; gap: 12px; }
+    .description { margin: 0; color: var(--secondary-text-color); font-size: 14px; }
+    .hint { color: var(--secondary-text-color); font-size: 13px; font-style: italic; }
+    .warning {
+      background: var(--warning-color, #ffa726);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .actions { display: flex; justify-content: flex-end; }
+    .export-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn:hover { background: var(--secondary-background-color, #f5f5f5); }
+    .btn-primary {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-export {
+      background: var(--success-color, #4caf50);
+      color: white;
+      border-color: var(--success-color, #4caf50);
+    }
+    .btn-export:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .link-btn {
+      background: none;
+      border: none;
+      color: white;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: inherit;
+      padding: 0;
+    }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      font-family: "Fira Code", "Consolas", monospace;
+      font-size: 13px;
+      resize: vertical;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+    }
+    pre {
+      background: var(--secondary-background-color, #f5f5f5);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      padding: 12px;
+      overflow: auto;
+      max-height: 400px;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    code { font-family: "Fira Code", "Consolas", monospace; color: var(--primary-text-color); }
+    .loading { text-align: center; padding: 16px; color: var(--secondary-text-color); }
+    .status-banner {
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .status-banner.success { background: var(--success-color, #4caf50); color: white; }
+    .status-banner.error { background: var(--error-color, #db4437); color: white; }
+    .dismiss {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      margin-left: auto;
+      line-height: 1;
+    }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspImportExport.prototype, "hass", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_tab", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_pasteText", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_loading", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_importStatus", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_exportStatus", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_pathStatus", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_checkingPath", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_yamlPreview", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_previewLoading", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_copied", void 0);
+__decorate([
+    r()
+], NspImportExport.prototype, "_showExport", void 0);
+NspImportExport = __decorate([
+    t$1("nsp-import-export")
+], NspImportExport);
+
+const PANEL_ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
+let NspPanelList = class NspPanelList extends i$1 {
+    constructor() {
+        super(...arguments);
+        this.panels = {};
+        // Add-panel form
+        this._showAddForm = false;
+        this._newPanelId = "";
+        this._addError = null;
+        this._adding = false;
+        // Per-panel inline actions
+        this._pendingDelete = null;
+        this._pendingClone = null;
+        this._cloneNewId = "";
+        this._cloneError = null;
+        this._cloning = false;
+        this._pendingRename = null;
+        this._renameNewId = "";
+        this._renameError = null;
+        this._renaming = false;
+        // Status feedback
+        this._status = null;
+        // Show import/export section
+        this._showImportExport = false;
+    }
+    _fireSelect(panelId) {
+        this.dispatchEvent(new CustomEvent("panel-selected", { detail: { panelId }, bubbles: true, composed: true }));
+    }
+    _fireRefresh() {
+        this.dispatchEvent(new CustomEvent("refresh-panels", { bubbles: true, composed: true }));
+    }
+    async _addNewPanel() {
+        const id = this._newPanelId.trim();
+        if (!id) {
+            this._addError = "Panel ID is required.";
+            return;
+        }
+        if (!PANEL_ID_RE.test(id)) {
+            this._addError = "Panel ID must be 1–64 alphanumeric, hyphen, or underscore characters.";
+            return;
+        }
+        if (this.panels[id]) {
+            this._addError = `A panel with ID "${id}" already exists.`;
+            return;
+        }
+        this._adding = true;
+        this._addError = null;
+        try {
+            const defaults = createDefaultPanelData();
+            defaults.config.panelRecvTopic = `cmnd/${id}/CustomSend`;
+            defaults.config.panelSendTopic = `tele/${id}/RESULT`;
+            await this.hass.callWS({
+                type: "nspanel_editor/save_panel",
+                panel_id: id,
+                config: defaults.config,
+                cards: defaults.cards,
+                hiddenCards: defaults.hiddenCards,
+                screensaver: defaults.screensaver,
+            });
+            this._showAddForm = false;
+            this._newPanelId = "";
+            this._fireRefresh();
+        }
+        catch (err) {
+            this._addError = err.message || "Failed to create panel";
+        }
+        this._adding = false;
+    }
+    async _deletePanel(id) {
+        try {
+            await this.hass.callWS({ type: "nspanel_editor/delete_panel", panel_id: id });
+            this._pendingDelete = null;
+            this._status = { type: "success", message: `Panel "${id}" deleted.` };
+            this._fireRefresh();
+        }
+        catch (err) {
+            this._pendingDelete = null;
+            this._status = { type: "error", message: err.message || "Delete failed" };
+        }
+    }
+    async _clonePanel() {
+        const srcId = this._pendingClone;
+        const newId = this._cloneNewId.trim();
+        if (!newId) {
+            this._cloneError = "New panel ID is required.";
+            return;
+        }
+        if (!PANEL_ID_RE.test(newId)) {
+            this._cloneError = "Panel ID must be 1–64 alphanumeric, hyphen, or underscore characters.";
+            return;
+        }
+        if (this.panels[newId]) {
+            this._cloneError = `A panel with ID "${newId}" already exists.`;
+            return;
+        }
+        this._cloning = true;
+        this._cloneError = null;
+        try {
+            const src = await this.hass.callWS({ type: "nspanel_editor/get_panel", panel_id: srcId });
+            await this.hass.callWS({
+                type: "nspanel_editor/save_panel",
+                panel_id: newId,
+                config: src.config || {},
+                cards: src.cards || [],
+                hiddenCards: src.hiddenCards || [],
+                screensaver: src.screensaver || {},
+            });
+            this._pendingClone = null;
+            this._cloneNewId = "";
+            this._status = { type: "success", message: `Panel "${srcId}" cloned as "${newId}".` };
+            this._fireRefresh();
+        }
+        catch (err) {
+            this._cloneError = err.message || "Clone failed";
+        }
+        this._cloning = false;
+    }
+    async _renamePanel() {
+        const oldId = this._pendingRename;
+        const newId = this._renameNewId.trim();
+        if (!newId) {
+            this._renameError = "New panel ID is required.";
+            return;
+        }
+        if (newId === oldId) {
+            this._renameError = "New ID must differ from current ID.";
+            return;
+        }
+        if (!PANEL_ID_RE.test(newId)) {
+            this._renameError = "Panel ID must be 1–64 alphanumeric, hyphen, or underscore characters.";
+            return;
+        }
+        if (this.panels[newId]) {
+            this._renameError = `A panel with ID "${newId}" already exists.`;
+            return;
+        }
+        this._renaming = true;
+        this._renameError = null;
+        try {
+            const src = await this.hass.callWS({ type: "nspanel_editor/get_panel", panel_id: oldId });
+            await this.hass.callWS({
+                type: "nspanel_editor/save_panel",
+                panel_id: newId,
+                config: src.config || {},
+                cards: src.cards || [],
+                hiddenCards: src.hiddenCards || [],
+                screensaver: src.screensaver || {},
+            });
+            await this.hass.callWS({ type: "nspanel_editor/delete_panel", panel_id: oldId });
+            this._pendingRename = null;
+            this._renameNewId = "";
+            this._status = { type: "success", message: `Panel renamed from "${oldId}" to "${newId}".` };
+            this._fireRefresh();
+        }
+        catch (err) {
+            this._renameError = err.message || "Rename failed";
+        }
+        this._renaming = false;
+    }
+    render() {
+        const panelIds = Object.keys(this.panels);
+        return b `
+      <div class="panel-list">
+        <div class="header">
+          <h1>NSPanel Lovelace Editor</h1>
+          <div class="actions">
+            <button class="btn btn-primary" @click=${() => { this._showAddForm = !this._showAddForm; this._addError = null; this._newPanelId = ""; }}>+ New Panel</button>
+            <button class="btn" @click=${() => { this._showImportExport = !this._showImportExport; }}>
+              ${this._showImportExport ? "Hide Import/Export" : "Import / Export"}
+            </button>
+          </div>
+        </div>
+
+        ${this._status
+            ? b `
+              <div class="status-banner ${this._status.type}">
+                ${this._status.message}
+                <button class="dismiss" @click=${() => { this._status = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
+
+        ${this._showAddForm ? this._renderAddForm() : ""}
+
+        ${this._showImportExport
+            ? b `
+              <div class="import-export-wrap">
+                <nsp-import-export
+                  .hass=${this.hass}
+                  @refresh-panels=${this._fireRefresh}
+                ></nsp-import-export>
+              </div>
+            `
+            : ""}
+
+        ${panelIds.length === 0
+            ? b `
+              <div class="empty-state">
+                <p>No NSPanel configurations found.</p>
+                <p>Import from an existing apps.yaml, paste YAML, or create a new panel.</p>
+              </div>
+            `
+            : b `
+              <div class="panel-grid">
+                ${panelIds.map((id) => this._renderPanelCard(id, this.panels[id]))}
+              </div>
+            `}
+      </div>
+    `;
+    }
+    _renderAddForm() {
+        return b `
+      <div class="inline-form">
+        <h3>New Panel</h3>
+        <div class="form-row">
+          <input
+            type="text"
+            placeholder="Panel ID (e.g., nspanel-bedroom)"
+            .value=${this._newPanelId}
+            @input=${(e) => { this._newPanelId = e.target.value; this._addError = null; }}
+            @keydown=${(e) => { if (e.key === "Enter")
+            this._addNewPanel(); }}
+          />
+          <button class="btn btn-primary" ?disabled=${this._adding} @click=${this._addNewPanel}>
+            ${this._adding ? "Creating…" : "Create"}
+          </button>
+          <button class="btn" @click=${() => { this._showAddForm = false; this._newPanelId = ""; this._addError = null; }}>Cancel</button>
+        </div>
+        ${this._addError ? b `<div class="field-error">${this._addError}</div>` : ""}
+        <p class="hint">ID must be 1–64 alphanumeric, hyphen, or underscore characters.</p>
+      </div>
+    `;
+    }
+    _renderPanelCard(id, panel) {
+        const isDeleting = this._pendingDelete === id;
+        const isCloning = this._pendingClone === id;
+        const isRenaming = this._pendingRename === id;
+        return b `
+      <div class="panel-card">
+        <div
+          class="card-main"
+          role="button"
+          tabindex="0"
+          @click=${() => { if (!isDeleting && !isCloning && !isRenaming)
+            this._fireSelect(id); }}
+          @keydown=${(e) => { if ((e.key === "Enter" || e.key === " ") && !isDeleting && !isCloning && !isRenaming) {
+            e.preventDefault();
+            this._fireSelect(id);
+        } }}
+        >
+          <h3>${id}</h3>
+          <div class="panel-info">
+            <span>Model: ${panel.model?.toUpperCase() || "EU"}</span>
+            <span>Cards: ${panel.card_count}</span>
+            ${panel.hidden_card_count > 0 ? b `<span>Hidden: ${panel.hidden_card_count}</span>` : ""}
+            ${panel.has_screensaver ? b `<span class="badge">Screensaver</span>` : ""}
+          </div>
+        </div>
+        <div class="card-actions" @click=${(e) => e.stopPropagation()}>
+          ${!isDeleting && !isCloning && !isRenaming
+            ? b `
+                <button class="btn-icon" title="Rename" aria-label="Rename panel ${id}" @click=${() => { this._pendingRename = id; this._renameNewId = id; this._renameError = null; }}>✏️</button>
+                <button class="btn-icon" title="Clone" aria-label="Clone panel ${id}" @click=${() => { this._pendingClone = id; this._cloneNewId = ""; this._cloneError = null; }}>⧉</button>
+                <button class="btn-icon btn-danger" title="Delete" aria-label="Delete panel ${id}" @click=${() => { this._pendingDelete = id; }}>🗑</button>
+              `
+            : ""}
+        </div>
+
+        ${isDeleting
+            ? b `
+              <div class="confirm-row">
+                <span>Delete "${id}"?</span>
+                <button class="btn btn-danger-sm" @click=${() => this._deletePanel(id)}>Delete</button>
+                <button class="btn btn-sm" @click=${() => { this._pendingDelete = null; }}>Cancel</button>
+              </div>
+            `
+            : ""}
+
+        ${isCloning
+            ? b `
+              <div class="action-form">
+                <span class="action-label">Clone as:</span>
+                <input
+                  type="text"
+                  placeholder="New panel ID"
+                  .value=${this._cloneNewId}
+                  @input=${(e) => { this._cloneNewId = e.target.value; this._cloneError = null; }}
+                  @keydown=${(e) => { if (e.key === "Enter")
+                this._clonePanel(); if (e.key === "Escape") {
+                this._pendingClone = null;
+            } }}
+                />
+                <button class="btn btn-primary-sm" ?disabled=${this._cloning} @click=${this._clonePanel}>
+                  ${this._cloning ? "…" : "Clone"}
+                </button>
+                <button class="btn btn-sm" @click=${() => { this._pendingClone = null; this._cloneNewId = ""; this._cloneError = null; }}>Cancel</button>
+                ${this._cloneError ? b `<div class="field-error">${this._cloneError}</div>` : ""}
+              </div>
+            `
+            : ""}
+
+        ${isRenaming
+            ? b `
+              <div class="action-form">
+                <span class="action-label">New ID:</span>
+                <input
+                  type="text"
+                  .value=${this._renameNewId}
+                  @input=${(e) => { this._renameNewId = e.target.value; this._renameError = null; }}
+                  @keydown=${(e) => { if (e.key === "Enter")
+                this._renamePanel(); if (e.key === "Escape") {
+                this._pendingRename = null;
+            } }}
+                />
+                <button class="btn btn-primary-sm" ?disabled=${this._renaming} @click=${this._renamePanel}>
+                  ${this._renaming ? "…" : "Rename"}
+                </button>
+                <button class="btn btn-sm" @click=${() => { this._pendingRename = null; this._renameNewId = ""; this._renameError = null; }}>Cancel</button>
+                ${this._renameError ? b `<div class="field-error">${this._renameError}</div>` : ""}
+              </div>
+            `
+            : ""}
+      </div>
+    `;
+    }
+};
+NspPanelList.styles = i$4 `
+    :host { display: block; }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .header h1 { margin: 0; flex: 1; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn:hover { background: var(--secondary-background-color, #f5f5f5); }
+    .btn-primary {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      border-color: var(--primary-color, #03a9f4);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-banner {
+      padding: 10px 14px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .status-banner.success { background: var(--success-color, #4caf50); color: white; }
+    .status-banner.error { background: var(--error-color, #db4437); color: white; }
+    .dismiss {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      margin-left: auto;
+      line-height: 1;
+    }
+    .inline-form {
+      background: var(--card-background-color, white);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .inline-form h3 { margin: 0 0 12px; }
+    .form-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .form-row input {
+      flex: 1;
+      min-width: 200px;
+      padding: 8px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 14px;
+    }
+    .hint { margin: 8px 0 0; font-size: 12px; color: var(--secondary-text-color); }
+    .field-error { color: var(--error-color, #db4437); font-size: 12px; margin-top: 4px; width: 100%; }
+    .import-export-wrap { margin-bottom: 16px; }
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .panel-card {
+      background: var(--card-background-color, white);
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      transition: box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .panel-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+    .card-main { cursor: pointer; flex: 1; }
+    .card-main:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); border-radius: 4px; }
+    .card-main h3 { margin: 0 0 8px 0; }
+    .card-actions { display: flex; gap: 4px; justify-content: flex-end; }
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      border-radius: 4px;
+      opacity: 0.6;
+      line-height: 1;
+    }
+    .btn-icon:hover { opacity: 1; background: var(--secondary-background-color, #f5f5f5); }
+    .btn-danger { color: var(--error-color, #db4437); }
+    .panel-info {
+      display: flex;
+      gap: 12px;
+      color: var(--secondary-text-color, #727272);
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--secondary-text-color, #727272);
+    }
+    .confirm-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: var(--secondary-background-color, #fff3e0);
+      border-radius: 4px;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .confirm-row span { flex: 1; }
+    .action-form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: var(--secondary-background-color, #f5f5f5);
+      border-radius: 4px;
+      flex-wrap: wrap;
+    }
+    .action-label { font-size: 13px; color: var(--secondary-text-color); white-space: nowrap; }
+    .action-form input {
+      flex: 1;
+      min-width: 120px;
+      padding: 6px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 13px;
+    }
+    .btn-primary-sm {
+      padding: 5px 10px;
+      border: 1px solid var(--primary-color, #03a9f4);
+      border-radius: 4px;
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-primary-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-sm {
+      padding: 5px 10px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 4px;
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-danger-sm {
+      padding: 5px 10px;
+      border: 1px solid var(--error-color, #db4437);
+      border-radius: 4px;
+      background: var(--error-color, #db4437);
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+    }
+  `;
+__decorate([
+    n({ attribute: false })
+], NspPanelList.prototype, "hass", void 0);
+__decorate([
+    n({ attribute: false })
+], NspPanelList.prototype, "panels", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_showAddForm", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_newPanelId", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_addError", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_adding", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_pendingDelete", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_pendingClone", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_cloneNewId", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_cloneError", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_cloning", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_pendingRename", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_renameNewId", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_renameError", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_renaming", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_status", void 0);
+__decorate([
+    r()
+], NspPanelList.prototype, "_showImportExport", void 0);
+NspPanelList = __decorate([
+    t$1("nsp-panel-list")
+], NspPanelList);
 
 /**
  * Self-contained entity picker that works without HA's built-in
  * `ha-entity-picker`.  Uses `hass.states` for suggestions and fires
  * `value-changed` with the same shape as the HA component.
  */
-let NspEntityPicker = class NspEntityPicker extends i {
+let NspEntityPicker = class NspEntityPicker extends i$1 {
     constructor() {
         super(...arguments);
         this.value = "";
@@ -564,7 +1350,7 @@ let NspEntityPicker = class NspEntityPicker extends i {
     `;
     }
 };
-NspEntityPicker.styles = i$3 `
+NspEntityPicker.styles = i$4 `
     :host {
       display: block;
       position: relative;
@@ -670,10 +1456,10 @@ __decorate([
     r()
 ], NspEntityPicker.prototype, "_opened", void 0);
 NspEntityPicker = __decorate([
-    t("nsp-entity-picker")
+    t$1("nsp-entity-picker")
 ], NspEntityPicker);
 
-let NspSettingsEditor = class NspSettingsEditor extends i {
+let NspSettingsEditor = class NspSettingsEditor extends i$1 {
     _fireChanged(updated) {
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: updated }, bubbles: true, composed: true }));
     }
@@ -938,7 +1724,7 @@ let NspSettingsEditor = class NspSettingsEditor extends i {
     `;
     }
 };
-NspSettingsEditor.styles = i$3 `
+NspSettingsEditor.styles = i$4 `
     :host { display: block; }
     .settings { display: flex; flex-direction: column; gap: 4px; }
     section {
@@ -976,10 +1762,10 @@ __decorate([
     n({ attribute: false })
 ], NspSettingsEditor.prototype, "config", void 0);
 NspSettingsEditor = __decorate([
-    t("nsp-settings-editor")
+    t$1("nsp-settings-editor")
 ], NspSettingsEditor);
 
-let NspEntityEditor = class NspEntityEditor extends i {
+let NspEntityEditor = class NspEntityEditor extends i$1 {
     constructor() {
         super(...arguments);
         this.includeDomains = [];
@@ -1286,7 +2072,7 @@ let NspEntityEditor = class NspEntityEditor extends i {
     `;
     }
 };
-NspEntityEditor.styles = i$3 `
+NspEntityEditor.styles = i$4 `
     :host { display: block; }
     .entity-editor {
       display: flex;
@@ -1339,10 +2125,10 @@ __decorate([
     n({ type: Array })
 ], NspEntityEditor.prototype, "hiddenCardKeys", void 0);
 NspEntityEditor = __decorate([
-    t("nsp-entity-editor")
+    t$1("nsp-entity-editor")
 ], NspEntityEditor);
 
-let NspModePicker = class NspModePicker extends i {
+let NspModePicker = class NspModePicker extends i$1 {
     constructor() {
         super(...arguments);
         this.entity = "";
@@ -1459,7 +2245,7 @@ let NspModePicker = class NspModePicker extends i {
         return mode.replace(/_/g, " ");
     }
 };
-NspModePicker.styles = i$3 `
+NspModePicker.styles = i$4 `
     :host {
       display: block;
     }
@@ -1558,10 +2344,10 @@ __decorate([
     r()
 ], NspModePicker.prototype, "_customInput", void 0);
 NspModePicker = __decorate([
-    t("nsp-mode-picker")
+    t$1("nsp-mode-picker")
 ], NspModePicker);
 
-let NspCardEditor = class NspCardEditor extends i {
+let NspCardEditor = class NspCardEditor extends i$1 {
     constructor() {
         super(...arguments);
         this.hiddenCardKeys = [];
@@ -1842,7 +2628,7 @@ let NspCardEditor = class NspCardEditor extends i {
     `;
     }
 };
-NspCardEditor.styles = i$3 `
+NspCardEditor.styles = i$4 `
     :host { display: block; }
     .card-editor {
       display: flex;
@@ -1907,10 +2693,10 @@ __decorate([
     r()
 ], NspCardEditor.prototype, "_expandedEntity", void 0);
 NspCardEditor = __decorate([
-    t("nsp-card-editor")
+    t$1("nsp-card-editor")
 ], NspCardEditor);
 
-let NspCardList = class NspCardList extends i {
+let NspCardList = class NspCardList extends i$1 {
     constructor() {
         super(...arguments);
         this.cards = [];
@@ -2037,7 +2823,7 @@ let NspCardList = class NspCardList extends i {
     `;
     }
 };
-NspCardList.styles = i$3 `
+NspCardList.styles = i$4 `
     :host { display: block; }
     .card-list { display: flex; flex-direction: column; gap: 8px; }
     .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -2131,10 +2917,74 @@ __decorate([
     r()
 ], NspCardList.prototype, "_dragIndex", void 0);
 NspCardList = __decorate([
-    t("nsp-card-list")
+    t$1("nsp-card-list")
 ], NspCardList);
 
-let NspYamlPreview = class NspYamlPreview extends i {
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t={CHILD:2},e$1=t=>(...e)=>({_$litDirective$:t,values:e});class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */class e extends i{constructor(i){if(super(i),this.it=A,i.type!==t.CHILD)throw Error(this.constructor.directiveName+"() can only be used in child bindings")}render(r){if(r===A||null==r)return this._t=void 0,this.it=r;if(r===E)return r;if("string"!=typeof r)throw Error(this.constructor.directiveName+"() called with a non-string value");if(r===this.it)return this._t;this.it=r;const s=[r];return s.raw=s,this._t={_$litType$:this.constructor.resultType,strings:s,values:[]}}}e.directiveName="unsafeHTML",e.resultType=1;const o=e$1(e);
+
+/** Minimal YAML syntax highlighter — no external dependencies. */
+function highlightYaml(yaml) {
+    return yaml
+        .split("\n")
+        .map((raw) => {
+        // Escape HTML entities first
+        const line = raw
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        // Comment line
+        if (/^\s*#/.test(line)) {
+            return `<span class="y-comment">${line}</span>`;
+        }
+        // List item prefix: "  - " — highlight the dash separately
+        const listMatch = line.match(/^(\s*-\s+)(.*)$/);
+        if (listMatch) {
+            const [, prefix, rest] = listMatch;
+            return `<span class="y-list-dash">${prefix}</span>${colorizeValue(rest)}`;
+        }
+        // Key: value
+        const kvMatch = line.match(/^(\s*)([^:]+?)(\s*:\s*)(.*)$/);
+        if (kvMatch) {
+            const [, indent, key, sep, value] = kvMatch;
+            return `${indent}<span class="y-key">${key}</span>${sep}${colorizeValue(value)}`;
+        }
+        return line;
+    })
+        .join("\n");
+}
+function colorizeValue(value) {
+    if (!value)
+        return value;
+    // Quoted string
+    if (/^["'].*["']$/.test(value))
+        return `<span class="y-string">${value}</span>`;
+    // Number
+    if (/^-?\d+(\.\d+)?$/.test(value))
+        return `<span class="y-number">${value}</span>`;
+    // Boolean / null
+    if (/^(true|false|yes|no|null|~)$/i.test(value))
+        return `<span class="y-bool">${value}</span>`;
+    // Inline comment
+    const commentIdx = value.indexOf(" #");
+    if (commentIdx !== -1) {
+        const v = value.slice(0, commentIdx);
+        const c = value.slice(commentIdx);
+        return `${colorizeValue(v)}<span class="y-comment">${c}</span>`;
+    }
+    return `<span class="y-value">${value}</span>`;
+}
+let NspYamlPreview = class NspYamlPreview extends i$1 {
     constructor() {
         super(...arguments);
         this._yaml = "";
@@ -2229,12 +3079,12 @@ let NspYamlPreview = class NspYamlPreview extends i {
               </div>
             `
             : ""}
-        <pre><code>${this._yaml}</code></pre>
+        <pre><code>${o(highlightYaml(this._yaml))}</code></pre>
       </div>
     `;
     }
 };
-NspYamlPreview.styles = i$3 `
+NspYamlPreview.styles = i$4 `
     :host { display: block; }
     .yaml-preview { display: flex; flex-direction: column; gap: 12px; }
     .toolbar { display: flex; gap: 8px; justify-content: flex-end; }
@@ -2299,6 +3149,22 @@ NspYamlPreview.styles = i$3 `
       word-break: break-word;
     }
     code { font-family: "Fira Code", "Consolas", monospace; color: var(--primary-text-color); }
+    /* YAML syntax highlight tokens */
+    .y-key { color: #0d47a1; }
+    .y-string { color: #2e7d32; }
+    .y-number { color: #6a1b9a; }
+    .y-bool { color: #e65100; }
+    .y-comment { color: #78909c; font-style: italic; }
+    .y-list-dash { color: #c62828; }
+    .y-value { color: var(--primary-text-color); }
+    @media (prefers-color-scheme: dark) {
+      .y-key { color: #90caf9; }
+      .y-string { color: #a5d6a7; }
+      .y-number { color: #ce93d8; }
+      .y-bool { color: #ffcc80; }
+      .y-comment { color: #90a4ae; }
+      .y-list-dash { color: #ef9a9a; }
+    }
     .loading { text-align: center; padding: 32px; color: var(--secondary-text-color); }
     .error {
       background: var(--error-color, #db4437);
@@ -2329,7 +3195,7 @@ __decorate([
     r()
 ], NspYamlPreview.prototype, "_exportStatus", void 0);
 NspYamlPreview = __decorate([
-    t("nsp-yaml-preview")
+    t$1("nsp-yaml-preview")
 ], NspYamlPreview);
 
 const THEME_KEYS = [
@@ -2350,7 +3216,7 @@ const THEME_KEYS = [
     "tMainTextAlt2",
     "tTimeAdd",
 ];
-let NspScreensaverEditor = class NspScreensaverEditor extends i {
+let NspScreensaverEditor = class NspScreensaverEditor extends i$1 {
     constructor() {
         super(...arguments);
         this.cardKeys = [];
@@ -2755,7 +3621,7 @@ let NspScreensaverEditor = class NspScreensaverEditor extends i {
     `;
     }
 };
-NspScreensaverEditor.styles = i$3 `
+NspScreensaverEditor.styles = i$4 `
     :host {
       display: block;
     }
@@ -2977,14 +3843,14 @@ __decorate([
     n({ type: Array })
 ], NspScreensaverEditor.prototype, "cardKeys", void 0);
 NspScreensaverEditor = __decorate([
-    t("nsp-screensaver-editor")
+    t$1("nsp-screensaver-editor")
 ], NspScreensaverEditor);
 
 /** Convert 8-bit R, G, B channels to a decimal RGB565 value (NSPanel format). */
 function rgbToRgb565(r, g, b) {
     return ((r & 0xf8) << 8) | ((g & 0xfc) << 3) | (b >> 3);
 }
-let NspNotificationEditor = class NspNotificationEditor extends i {
+let NspNotificationEditor = class NspNotificationEditor extends i$1 {
     constructor() {
         super(...arguments);
         this._type = "popup";
@@ -3267,7 +4133,7 @@ let NspNotificationEditor = class NspNotificationEditor extends i {
     `;
     }
 };
-NspNotificationEditor.styles = i$3 `
+NspNotificationEditor.styles = i$4 `
     :host {
       display: block;
     }
@@ -3426,7 +4292,7 @@ __decorate([
     r()
 ], NspNotificationEditor.prototype, "_copied", void 0);
 NspNotificationEditor = __decorate([
-    t("nsp-notification-editor")
+    t$1("nsp-notification-editor")
 ], NspNotificationEditor);
 
 const TAB_LABELS = {
@@ -3437,18 +4303,22 @@ const TAB_LABELS = {
     notifications: "Notifications",
     yaml: "YAML Preview",
 };
-let NspPanelEditor = class NspPanelEditor extends i {
+let NspPanelEditor = class NspPanelEditor extends i$1 {
     constructor() {
         super(...arguments);
         this._data = null;
         this._activeTab = "settings";
         this._loading = true;
         this._saving = false;
+        this._saveError = null;
+        this._deleteError = null;
         this._error = null;
         this._dirty = false;
         this._saveSuccess = false;
         this._exporting = false;
         this._exportStatus = null;
+        this._confirmDelete = false;
+        this._confirmBack = false;
     }
     async connectedCallback() {
         super.connectedCallback();
@@ -3479,6 +4349,7 @@ let NspPanelEditor = class NspPanelEditor extends i {
         if (!this._data)
             return;
         this._saving = true;
+        this._saveError = null;
         try {
             await this.hass.callWS({
                 type: "nspanel_editor/save_panel",
@@ -3489,12 +4360,13 @@ let NspPanelEditor = class NspPanelEditor extends i {
                 screensaver: this._data.screensaver,
             });
             this._dirty = false;
+            this._confirmBack = false;
             this._saveSuccess = true;
             this._exportStatus = null;
             setTimeout(() => { this._saveSuccess = false; }, 15000);
         }
         catch (err) {
-            alert(`Save failed: ${err.message}`);
+            this._saveError = err.message || "Save failed";
         }
         this._saving = false;
     }
@@ -3530,26 +4402,29 @@ let NspPanelEditor = class NspPanelEditor extends i {
         this._exporting = false;
     }
     async _deletePanel() {
-        if (!confirm(`Delete panel "${this.panelId}"? This cannot be undone.`))
-            return;
         try {
             await this.hass.callWS({
                 type: "nspanel_editor/delete_panel",
                 panel_id: this.panelId,
             });
+            this._confirmDelete = false;
             this._fireBack();
         }
         catch (err) {
-            alert(`Delete failed: ${err.message}`);
+            this._confirmDelete = false;
+            this._deleteError = err.message || "Delete failed";
         }
     }
     _fireBack() {
         this.dispatchEvent(new CustomEvent("back-to-list", { bubbles: true, composed: true }));
     }
     _handleBack() {
-        if (this._dirty && !confirm("You have unsaved changes. Discard and go back?"))
-            return;
-        this._fireBack();
+        if (this._dirty) {
+            this._confirmBack = true;
+        }
+        else {
+            this._fireBack();
+        }
     }
     _onConfigChanged(e) {
         if (!this._data)
@@ -3610,11 +4485,47 @@ let NspPanelEditor = class NspPanelEditor extends i {
           <h2>${this.panelId}</h2>
           ${this._dirty ? b `<span class="dirty-badge">Unsaved</span>` : ""}
           <span class="spacer"></span>
-          <button class="btn btn-danger" @click=${this._deletePanel}>Delete Panel</button>
-          <button class="btn btn-primary" ?disabled=${this._saving} @click=${this._savePanel}>
-            ${this._saving ? "Saving..." : "Save"}
-          </button>
+          ${this._confirmDelete
+            ? b `
+                <span class="confirm-text">Delete "${this.panelId}"?</span>
+                <button class="btn btn-danger" @click=${this._deletePanel}>Confirm Delete</button>
+                <button class="btn" @click=${() => { this._confirmDelete = false; }}>Cancel</button>
+              `
+            : b `
+                <button class="btn btn-danger" @click=${() => { this._confirmDelete = true; }}>Delete Panel</button>
+                <button class="btn btn-primary" ?disabled=${this._saving} @click=${this._savePanel}>
+                  ${this._saving ? "Saving…" : "Save"}
+                </button>
+              `}
         </div>
+
+        ${this._confirmBack
+            ? b `
+              <div class="warn-banner">
+                <span>You have unsaved changes. Discard and go back?</span>
+                <button class="btn-warn-action" @click=${() => { this._confirmBack = false; this._fireBack(); }}>Discard &amp; Go Back</button>
+                <button class="btn-warn-cancel" @click=${() => { this._confirmBack = false; }}>Keep Editing</button>
+              </div>
+            `
+            : ""}
+
+        ${this._saveError
+            ? b `
+              <div class="status-banner error">
+                Save failed: ${this._saveError}
+                <button class="dismiss" @click=${() => { this._saveError = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
+
+        ${this._deleteError
+            ? b `
+              <div class="status-banner error">
+                Delete failed: ${this._deleteError}
+                <button class="dismiss" @click=${() => { this._deleteError = null; }}>&times;</button>
+              </div>
+            `
+            : ""}
 
         ${this._saveSuccess
             ? b `
@@ -3705,7 +4616,7 @@ let NspPanelEditor = class NspPanelEditor extends i {
         }
     }
 };
-NspPanelEditor.styles = i$3 `
+NspPanelEditor.styles = i$4 `
     :host { display: block; }
     .panel-editor { display: flex; flex-direction: column; gap: 16px; }
     .header {
@@ -3838,6 +4749,43 @@ NspPanelEditor.styles = i$3 `
       margin-left: auto;
       line-height: 1;
     }
+    .confirm-text {
+      font-size: 14px;
+      color: var(--error-color, #db4437);
+      white-space: nowrap;
+    }
+    .warn-banner {
+      background: var(--warning-color, #ffa726);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+    .btn-warn-action {
+      padding: 4px 12px;
+      border: 1px solid white;
+      border-radius: 4px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .btn-warn-action:hover { background: rgba(255, 255, 255, 0.2); }
+    .btn-warn-cancel {
+      padding: 4px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+      background: transparent;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+    }
     pre {
       background: var(--card-background-color, white);
       border: 1px solid var(--divider-color, #e0e0e0);
@@ -3870,6 +4818,12 @@ __decorate([
 ], NspPanelEditor.prototype, "_saving", void 0);
 __decorate([
     r()
+], NspPanelEditor.prototype, "_saveError", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_deleteError", void 0);
+__decorate([
+    r()
 ], NspPanelEditor.prototype, "_error", void 0);
 __decorate([
     r()
@@ -3883,11 +4837,17 @@ __decorate([
 __decorate([
     r()
 ], NspPanelEditor.prototype, "_exportStatus", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_confirmDelete", void 0);
+__decorate([
+    r()
+], NspPanelEditor.prototype, "_confirmBack", void 0);
 NspPanelEditor = __decorate([
-    t("nsp-panel-editor")
+    t$1("nsp-panel-editor")
 ], NspPanelEditor);
 
-let NsPanelLovelaceEditor = class NsPanelLovelaceEditor extends i {
+let NsPanelLovelaceEditor = class NsPanelLovelaceEditor extends i$1 {
     constructor() {
         super(...arguments);
         this.narrow = false;
@@ -3955,7 +4915,7 @@ let NsPanelLovelaceEditor = class NsPanelLovelaceEditor extends i {
     `;
     }
 };
-NsPanelLovelaceEditor.styles = i$3 `
+NsPanelLovelaceEditor.styles = i$4 `
     :host {
       display: block;
       padding: 16px;
@@ -4008,5 +4968,5 @@ __decorate([
     r()
 ], NsPanelLovelaceEditor.prototype, "_error", void 0);
 NsPanelLovelaceEditor = __decorate([
-    t("nspanel-lovelace-editor")
+    t$1("nspanel-lovelace-editor")
 ], NsPanelLovelaceEditor);
