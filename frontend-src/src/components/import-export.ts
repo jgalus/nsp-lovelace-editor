@@ -208,7 +208,6 @@ export class NspImportExport extends LitElement {
                   paste-based import
                 </button>
                 instead.
-                instead.
               </div>
             `
           : ""}

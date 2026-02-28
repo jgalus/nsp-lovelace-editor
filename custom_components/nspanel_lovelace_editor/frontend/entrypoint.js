@@ -400,14 +400,34 @@ let NspImportExport = class NspImportExport extends i$1 {
         ${!this._checkingPath && this._pathStatus !== null && (!this._pathStatus.exists || !this._pathStatus.readable)
             ? b `
               <div class="warning">
-                ⚠ apps.yaml is not accessible from Home Assistant.
+                ⚠
+                ${this._pathStatus.exists
+                ? "apps.yaml exists but is not readable by Home Assistant."
+                : this._pathStatus.parent_writable
+                    ? "apps.yaml does not exist yet. Home Assistant can still create it on export, but file-based import is not possible."
+                    : "apps.yaml does not exist and Home Assistant cannot write to the configured directory."}
+                ${this._pathStatus.error
+                ? b `<div class="hint">${this._pathStatus.error}</div>`
+                : ""}
+                Use
+                <button class="link-btn" @click=${() => { this._tab = "paste"; }}>
+                  paste-based import
+                </button>
+                instead.
+              </div>
+            `
+            : ""}
+        ${!this._checkingPath && this._pathStatus === null
+            ? b `
+              <div class="warning">
+                ⚠ apps.yaml path could not be verified.
                 Use <button class="link-btn" @click=${() => { this._tab = "paste"; }}>paste-based import</button> instead.
               </div>
             `
             : ""}
         <button
           class="btn btn-primary"
-          ?disabled=${this._loading || this._checkingPath || (this._pathStatus !== null && !pathOk)}
+          ?disabled=${this._loading || this._checkingPath || !pathOk}
           @click=${this._importFromFile}
         >
           ${this._loading ? "Importing…" : "Import from apps.yaml"}
