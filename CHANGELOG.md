@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.0 — 2026-02-28
+
+### Added
+
+- **Multi-panel management** — Rename, clone, and delete panels directly from
+  the panel list with inline confirmation UI (no more browser `alert`/`confirm`
+  dialogs).
+- **Import/Export dialog** (`import-export.ts`) — File-based import when
+  AppDaemon path is accessible, paste-based import for container deployments
+  without a shared volume, and YAML export/preview with auto-detected path
+  accessibility. Export is also enabled for first-time setup when the file does
+  not yet exist but the parent directory is writable.
+- **YAML syntax highlighting** — Read-only YAML preview now uses CSS-based
+  syntax highlighting (no external dependencies, works inside LitElement shadow
+  DOM).
+- **Inline error & confirmation UI** — `panel-editor.ts` replaces all
+  `alert`/`confirm` calls with in-component error banners and back-navigation
+  confirmation prompts. Import and export status messages are now shown in their
+  respective sections.
+- **Accessibility improvements** — Panel cards are keyboard-navigable
+  (`role="button"`, `tabindex="0"`, keydown handler); panel action buttons have
+  `aria-label`; export section toggle uses `<button>` with `aria-expanded`.
+
 ## 0.4.3 — 2026-02-27
 
 ### Fixed
