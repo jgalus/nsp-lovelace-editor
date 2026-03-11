@@ -24,6 +24,12 @@ from .yaml_io import (
 
 # panel_id must be a safe identifier: alphanumeric, hyphens, underscores, 1-64 chars
 PANEL_ID = vol.All(str, vol.Match(r"^[a-zA-Z0-9_-]{1,64}$"))
+PANEL_DATA_SCHEMA = {
+    vol.Required("config"): dict,
+    vol.Optional("cards"): list,
+    vol.Optional("hiddenCards"): list,
+    vol.Optional("screensaver"): dict,
+}
 
 
 def async_register_websocket_commands(hass: HomeAssistant) -> None:
@@ -47,6 +53,16 @@ def _get_storage(hass: HomeAssistant) -> NsPanelStorage:
 def _get_appdaemon_path(hass: HomeAssistant) -> str:
     """Get the configured AppDaemon path."""
     return hass.data[DOMAIN].get("appdaemon_path", "")
+
+
+def _normalize_panel_data(payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize panel data into the storage/export structure."""
+    return {
+        "config": payload["config"],
+        "cards": payload.get("cards", []),
+        "hiddenCards": payload.get("hiddenCards", []),
+        "screensaver": payload.get("screensaver", {}),
+    }
 
 
 @websocket_api.require_admin
@@ -116,12 +132,7 @@ async def ws_save_panel(
 ) -> None:
     """Save/update a panel config."""
     storage = _get_storage(hass)
-    panel_data = {
-        "config": msg["config"],
-        "cards": msg.get("cards", []),
-        "hiddenCards": msg.get("hiddenCards", []),
-        "screensaver": msg.get("screensaver", {}),
-    }
+    panel_data = _normalize_panel_data(msg)
     errors = validate_panel(panel_data)
     if errors:
         connection.send_error(
@@ -256,7 +267,11 @@ async def ws_export_yaml(
 
 @websocket_api.require_admin
 @websocket_api.websocket_command(
-    {vol.Required("type"): "nspanel_editor/preview_yaml"}
+    {
+        vol.Required("type"): "nspanel_editor/preview_yaml",
+        vol.Optional("panel_id"): PANEL_ID,
+        vol.Optional("panel"): PANEL_DATA_SCHEMA,
+    }
 )
 @websocket_api.async_response
 async def ws_preview_yaml(
@@ -267,7 +282,29 @@ async def ws_preview_yaml(
     """Preview the YAML that would be exported without writing it."""
     appdaemon_path = _get_appdaemon_path(hass)
     storage = _get_storage(hass)
-    panels = await storage.async_get_panels()
+    panels = dict(await storage.async_get_panels())
+
+    panel_override = msg.get("panel")
+    panel_id = msg.get("panel_id")
+    if (panel_override is None) != (panel_id is None):
+        connection.send_error(
+            msg["id"],
+            "invalid_format",
+            "panel_id and panel must be provided together.",
+        )
+        return
+
+    if panel_override is not None and panel_id is not None:
+        panel_data = _normalize_panel_data(panel_override)
+        errors = validate_panel(panel_data)
+        if errors:
+            connection.send_error(
+                msg["id"],
+                "validation_error",
+                f"Invalid panel config: {'; '.join(errors)}",
+            )
+            return
+        panels[panel_id] = panel_data
 
     try:
         yaml_str = await hass.async_add_executor_job(

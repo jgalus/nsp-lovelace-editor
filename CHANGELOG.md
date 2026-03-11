@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.1 — 2026-03-11
+
+### Fixed
+
+- **Path validation hardening** — AppDaemon path checks now validate the
+  resolved path against allowed Home Assistant roots using real path ancestry
+  instead of string-prefix matching. This closes sibling-path bypasses such as
+  `/config2/...` while preserving the supported deployment paths.
+- **Draft-aware YAML preview** — The panel editor's YAML tab now previews the
+  current in-memory draft, including unsaved changes, instead of only the last
+  saved storage state. Export from that view is disabled until the panel is
+  saved so the preview and exported file cannot drift.
+- **`cardPower` speed support** — Added missing `speed` support for power-card
+  entities across backend schema validation, frontend types, and the entity
+  editor UI. This now matches the upstream NSPanel documentation, including
+  numeric values and template strings.
+- **Advanced JSON validation feedback** — Invalid JSON in `alarmControl`
+  overrides and direct service `data` payloads is now surfaced to the user with
+  explicit validation messages instead of being silently ignored.
+- **Inline card deletion confirmation** — Card deletion now uses the same
+  in-editor confirmation pattern as the rest of the UI, removing the last
+  browser `confirm()` flow from the editor.
+
 ## 0.5.0 — 2026-02-28
 
 ### Added

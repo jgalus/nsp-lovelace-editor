@@ -14,6 +14,7 @@ export class NspCardList extends LitElement {
   @state() private _expandedIndex: number | null = null;
   @state() private _showAddDialog = false;
   @state() private _dragIndex: number | null = null;
+  @state() private _pendingDeleteIndex: number | null = null;
 
   private _fireChanged(cards: CardConfig[]) {
     this.dispatchEvent(
@@ -29,8 +30,8 @@ export class NspCardList extends LitElement {
   }
 
   private _removeCard(index: number) {
-    if (!confirm(`Remove ${this.cards[index].type}${this.cards[index].title ? ` "${this.cards[index].title}"` : ""}?`)) return;
     const newCards = this.cards.filter((_, i) => i !== index);
+    this._pendingDeleteIndex = null;
     if (this._expandedIndex === index) this._expandedIndex = null;
     else if (this._expandedIndex !== null && this._expandedIndex > index) this._expandedIndex--;
     this._fireChanged(newCards);
@@ -41,6 +42,7 @@ export class NspCardList extends LitElement {
     const newCards = [...this.cards];
     const [item] = newCards.splice(from, 1);
     newCards.splice(to, 0, item);
+    this._pendingDeleteIndex = null;
     if (this._expandedIndex === from) this._expandedIndex = to;
     else if (this._expandedIndex !== null) {
       if (from < this._expandedIndex && to >= this._expandedIndex) this._expandedIndex--;
@@ -96,6 +98,8 @@ export class NspCardList extends LitElement {
     const isExpanded = this._expandedIndex === index;
     const entityCount = (card as any).entities?.length ?? ((card as any).entity ? 1 : 0);
     const isDragging = this._dragIndex === index;
+    const isDeleting = this._pendingDeleteIndex === index;
+    const deleteLabel = `${card.type}${card.title ? ` "${card.title}"` : ""}`;
 
     return html`
       <div class="card-item ${isDragging ? "dragging" : ""}"
@@ -121,8 +125,18 @@ export class NspCardList extends LitElement {
           <span class="card-entities">${entityCount} entit${entityCount === 1 ? "y" : "ies"}</span>
           <span class="spacer"></span>
           <button class="btn-icon expand-btn">${isExpanded ? "▼" : "▶"}</button>
-          <button class="btn-icon delete-btn" @click=${(e: Event) => { e.stopPropagation(); this._removeCard(index); }}>✕</button>
+          <button class="btn-icon delete-btn" @click=${(e: Event) => {
+            e.stopPropagation();
+            this._pendingDeleteIndex = index;
+          }}>✕</button>
         </div>
+        ${isDeleting ? html`
+          <div class="confirm-row">
+            <span>Remove ${deleteLabel}?</span>
+            <button class="btn-danger-sm" @click=${() => this._removeCard(index)}>Delete</button>
+            <button class="btn-sm" @click=${() => { this._pendingDeleteIndex = null; }}>Cancel</button>
+          </div>
+        ` : ""}
         ${isExpanded ? html`
           <div class="card-body">
             <nsp-card-editor
@@ -181,6 +195,15 @@ export class NspCardList extends LitElement {
     }
     .type-btn:hover { background: var(--primary-color); color: white; }
     .btn-sm { padding: 4px 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 12px; color: var(--secondary-text-color); }
+    .btn-danger-sm {
+      padding: 4px 12px;
+      border: 1px solid var(--error-color, #db4437);
+      border-radius: 4px;
+      background: var(--error-color, #db4437);
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+    }
     .card-item {
       border: 1px solid var(--divider-color, #e0e0e0);
       border-radius: 8px;
@@ -206,6 +229,17 @@ export class NspCardList extends LitElement {
     .spacer { flex: 1; }
     .btn-icon { background: none; border: none; cursor: pointer; padding: 4px 8px; font-size: 14px; color: var(--secondary-text-color); }
     .delete-btn:hover { color: var(--error-color, #db4437); }
+    .confirm-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--secondary-background-color, #fff3e0);
+      border-top: 1px solid var(--divider-color, #e0e0e0);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .confirm-row span { flex: 1; }
     .card-body { padding: 16px; border-top: 1px solid var(--divider-color, #e0e0e0); }
     .empty { text-align: center; color: var(--secondary-text-color); font-size: 14px; padding: 24px; }
   `;

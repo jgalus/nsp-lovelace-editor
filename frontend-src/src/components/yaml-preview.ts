@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { customElement, property, state } from "lit/decorators.js";
-import type { HomeAssistant } from "../models/types";
+import type { HomeAssistant, PanelData } from "../models/types";
 
 /** Minimal YAML syntax highlighter — no external dependencies. */
 function highlightYaml(yaml: string): string {
@@ -59,6 +59,9 @@ function colorizeValue(value: string): string {
 @customElement("nsp-yaml-preview")
 export class NspYamlPreview extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ type: String }) public panelId = "";
+  @property({ attribute: false }) public panelData?: PanelData;
+  @property({ type: Boolean }) public disableExport = false;
 
   @state() private _yaml = "";
   @state() private _loading = true;
@@ -76,12 +79,29 @@ export class NspYamlPreview extends LitElement {
     this._loading = true;
     this._error = null;
     try {
-      const result = await this.hass.callWS({ type: "nspanel_editor/preview_yaml" });
+      const result = await this.hass.callWS(this._buildPreviewRequest());
       this._yaml = result.yaml || "";
     } catch (err: any) {
       this._error = err.message || "Failed to load YAML preview";
     }
     this._loading = false;
+  }
+
+  private _buildPreviewRequest() {
+    if (this.panelId && this.panelData) {
+      return {
+        type: "nspanel_editor/preview_yaml",
+        panel_id: this.panelId,
+        panel: {
+          config: this.panelData.config,
+          cards: this.panelData.cards,
+          hiddenCards: this.panelData.hiddenCards,
+          screensaver: this.panelData.screensaver,
+        },
+      };
+    }
+
+    return { type: "nspanel_editor/preview_yaml" };
   }
 
   private async _copyToClipboard() {
@@ -139,10 +159,17 @@ export class NspYamlPreview extends LitElement {
           <button class="btn btn-primary" @click=${this._copyToClipboard}>
             ${this._copied ? "Copied!" : "Copy to Clipboard"}
           </button>
-          <button class="btn btn-export" ?disabled=${this._exporting} @click=${this._exportToFile}>
+          <button class="btn btn-export" ?disabled=${this._exporting || this.disableExport} @click=${this._exportToFile}>
             ${this._exporting ? "Exporting..." : "Export to apps.yaml"}
           </button>
         </div>
+        ${this.disableExport
+          ? html`
+              <div class="info-banner">
+                This preview includes unsaved panel changes. Save the panel before exporting to <code>apps.yaml</code>.
+              </div>
+            `
+          : ""}
         ${this._exportStatus
           ? html`
               <div class="status-banner ${this._exportStatus.type}">
@@ -196,6 +223,17 @@ export class NspYamlPreview extends LitElement {
     .status-banner.error {
       background: var(--error-color, #db4437);
       color: white;
+    }
+    .info-banner {
+      background: var(--warning-color, #ffa726);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .info-banner code {
+      font-family: "Fira Code", "Consolas", monospace;
+      color: inherit;
     }
     .status-banner .dismiss {
       background: none;

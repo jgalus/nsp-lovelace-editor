@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import type { HomeAssistant, EntityConfig } from "../models/types";
+import { parseOptionalJsonObject } from "../utils/json-field";
 import "./nsp-entity-picker";
 
 @customElement("nsp-entity-editor")
@@ -9,6 +10,7 @@ export class NspEntityEditor extends LitElement {
   @property({ attribute: false }) public entity!: EntityConfig;
   @property({ type: Array }) public includeDomains: string[] = [];
   @property({ type: Array }) public hiddenCardKeys: string[] = [];
+  @property({ type: Boolean }) public allowSpeed = false;
 
   private _fireChanged(updated: EntityConfig) {
     this.dispatchEvent(
@@ -147,12 +149,21 @@ export class NspEntityEditor extends LitElement {
             <label>Service Data (JSON)</label>
             <textarea rows="3"
               .value=${this.entity.data ? JSON.stringify(this.entity.data, null, 2) : ""}
+              placeholder='{"entity_id": "light.example"}'
+              @input=${(e: Event) => {
+                (e.target as HTMLTextAreaElement).setCustomValidity("");
+              }}
               @change=${(e: Event) => {
-                try {
-                  const data = JSON.parse((e.target as HTMLTextAreaElement).value || "{}");
-                  this._updateField("data", data);
-                } catch { /* ignore invalid JSON until committed */ }
+                const target = e.target as HTMLTextAreaElement;
+                const result = parseOptionalJsonObject(target.value, "Service data");
+                target.setCustomValidity(result.error || "");
+                if (result.error) {
+                  target.reportValidity();
+                  return;
+                }
+                this._updateField("data", result.value);
               }}></textarea>
+            <small>Enter a JSON object matching the Home Assistant service data payload.</small>
           </div>
           ${this._renderNameField()}
           ${this._renderIconField()}
@@ -170,9 +181,36 @@ export class NspEntityEditor extends LitElement {
         <input type="text" .value=${this.entity.value || ""} placeholder="HA template supported"
           @input=${(e: Event) => this._updateField("value", (e.target as HTMLInputElement).value)} />
       </div>
+      ${this.allowSpeed ? this._renderSpeedField() : nothing}
       ${this._renderIconField()}
       ${this._renderColorField()}
       ${this._renderConditionalVisibility()}
+    `;
+  }
+
+  private _renderSpeedField() {
+    const speed = this.entity.speed;
+    return html`
+      <div class="field">
+        <label>Power Card Speed</label>
+        <input
+          type="text"
+          .value=${speed === undefined ? "" : String(speed)}
+          placeholder="-100..100 or HA template"
+          @input=${(e: Event) => {
+            const raw = (e.target as HTMLInputElement).value.trim();
+            if (!raw) {
+              this._updateField("speed", undefined);
+              return;
+            }
+            this._updateField(
+              "speed",
+              /^-?\d+$/.test(raw) ? Number(raw) : raw
+            );
+          }}
+        />
+        <small>Integer from -100 to 100, or a Home Assistant template.</small>
+      </div>
     `;
   }
 

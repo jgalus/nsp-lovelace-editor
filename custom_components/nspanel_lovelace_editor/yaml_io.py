@@ -9,29 +9,14 @@ from typing import Any
 import yaml
 
 from .const import LOGGER
+from .path_utils import validate_allowed_path
 
 NSPANEL_MODULE = "nspanel-lovelace-ui"
 NSPANEL_CLASS = "NsPanelLovelaceUIManager"
 
-# Allowed parent directories for file I/O operations
-_ALLOWED_PATH_PREFIXES = (
-    "/config/",
-    "/addon_configs/",
-    "/homeassistant/",
-    "/share/",
-)
-
-
 def _validate_path_safety(file_path: str) -> None:
     """Ensure file_path resolves within allowed directories."""
-    resolved = str(Path(file_path).resolve())
-    if not any(
-        resolved.startswith(prefix.rstrip("/"))
-        for prefix in _ALLOWED_PATH_PREFIXES
-    ):
-        raise PermissionError(
-            f"Path {file_path} is outside allowed directories"
-        )
+    validate_allowed_path(file_path)
 
 
 class YamlWriteError(Exception):

@@ -22,25 +22,28 @@ from .const import (
 
 # --- Entity schema ---
 
-ENTITY_SCHEMA = vol.Schema(
-    {
-        vol.Required("entity"): str,
-        vol.Optional("name"): str,
-        vol.Optional("value"): str,
-        vol.Optional("icon"): vol.Any(str, dict),  # string or per-state map
-        vol.Optional("color"): vol.Any(list, dict, str),  # [R,G,B], per-state map, or template
-        vol.Optional("state"): str,
-        vol.Optional("state_not"): str,
-        vol.Optional("state_template"): str,
-        vol.Optional("status"): str,
-        vol.Optional("assumed_state"): str,
-        vol.Optional("action_name"): str,
-        vol.Optional("font"): vol.In(["small", "medium-icon", "medium"]),
-        vol.Optional("effectList"): str,
-        vol.Optional("data"): dict,  # for service entities
-    },
-    extra=vol.REMOVE_EXTRA,
-)
+ENTITY_SCHEMA_FIELDS = {
+    vol.Required("entity"): str,
+    vol.Optional("name"): str,
+    vol.Optional("value"): str,
+    vol.Optional("icon"): vol.Any(str, dict),  # string or per-state map
+    vol.Optional("color"): vol.Any(list, dict, str),  # [R,G,B], per-state map, or template
+    vol.Optional("state"): str,
+    vol.Optional("state_not"): str,
+    vol.Optional("state_template"): str,
+    vol.Optional("status"): str,
+    vol.Optional("assumed_state"): str,
+    vol.Optional("action_name"): str,
+    vol.Optional("font"): vol.In(["small", "medium-icon", "medium"]),
+    vol.Optional("effectList"): str,
+    vol.Optional("data"): dict,  # for service entities
+    vol.Optional("speed"): vol.Any(
+        vol.All(int, vol.Range(min=-100, max=100)),
+        str,
+    ),
+}
+
+ENTITY_SCHEMA = vol.Schema(ENTITY_SCHEMA_FIELDS, extra=vol.REMOVE_EXTRA)
 
 # --- Card schemas ---
 

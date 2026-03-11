@@ -110,6 +110,7 @@ export interface EntityConfig {
   value?: string;
   icon?: string | Record<string, string>;
   color?: number[] | Record<string, number[] | string> | string;
+  speed?: number | string;
   state?: string;
   state_not?: string;
   state_template?: string;

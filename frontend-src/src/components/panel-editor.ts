@@ -331,7 +331,12 @@ export class NspPanelEditor extends LitElement {
         `;
       case "yaml":
         return html`
-          <nsp-yaml-preview .hass=${this.hass}></nsp-yaml-preview>
+          <nsp-yaml-preview
+            .hass=${this.hass}
+            .panelId=${this.panelId}
+            .panelData=${this._data}
+            .disableExport=${this._dirty}
+          ></nsp-yaml-preview>
         `;
     }
   }

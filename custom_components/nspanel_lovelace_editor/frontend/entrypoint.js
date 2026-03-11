@@ -1785,11 +1785,42 @@ NspSettingsEditor = __decorate([
     t$1("nsp-settings-editor")
 ], NspSettingsEditor);
 
+function parseOptionalJsonObject(raw, fieldLabel) {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+        return { value: undefined, error: null };
+    }
+    try {
+        const parsed = JSON.parse(trimmed);
+        if (typeof parsed !== "object" ||
+            parsed === null ||
+            Array.isArray(parsed)) {
+            return {
+                value: undefined,
+                error: `${fieldLabel} must be a JSON object.`,
+            };
+        }
+        return {
+            value: Object.keys(parsed).length > 0
+                ? parsed
+                : undefined,
+            error: null,
+        };
+    }
+    catch {
+        return {
+            value: undefined,
+            error: `${fieldLabel} must be valid JSON.`,
+        };
+    }
+}
+
 let NspEntityEditor = class NspEntityEditor extends i$1 {
     constructor() {
         super(...arguments);
         this.includeDomains = [];
         this.hiddenCardKeys = [];
+        this.allowSpeed = false;
     }
     _fireChanged(updated) {
         this.dispatchEvent(new CustomEvent("entity-changed", { detail: { entity: updated }, bubbles: true, composed: true }));
@@ -1924,13 +1955,21 @@ let NspEntityEditor = class NspEntityEditor extends i$1 {
             <label>Service Data (JSON)</label>
             <textarea rows="3"
               .value=${this.entity.data ? JSON.stringify(this.entity.data, null, 2) : ""}
+              placeholder='{"entity_id": "light.example"}'
+              @input=${(e) => {
+                    e.target.setCustomValidity("");
+                }}
               @change=${(e) => {
-                    try {
-                        const data = JSON.parse(e.target.value || "{}");
-                        this._updateField("data", data);
+                    const target = e.target;
+                    const result = parseOptionalJsonObject(target.value, "Service data");
+                    target.setCustomValidity(result.error || "");
+                    if (result.error) {
+                        target.reportValidity();
+                        return;
                     }
-                    catch { /* ignore invalid JSON until committed */ }
+                    this._updateField("data", result.value);
                 }}></textarea>
+            <small>Enter a JSON object matching the Home Assistant service data payload.</small>
           </div>
           ${this._renderNameField()}
           ${this._renderIconField()}
@@ -1947,9 +1986,32 @@ let NspEntityEditor = class NspEntityEditor extends i$1 {
         <input type="text" .value=${this.entity.value || ""} placeholder="HA template supported"
           @input=${(e) => this._updateField("value", e.target.value)} />
       </div>
+      ${this.allowSpeed ? this._renderSpeedField() : A}
       ${this._renderIconField()}
       ${this._renderColorField()}
       ${this._renderConditionalVisibility()}
+    `;
+    }
+    _renderSpeedField() {
+        const speed = this.entity.speed;
+        return b `
+      <div class="field">
+        <label>Power Card Speed</label>
+        <input
+          type="text"
+          .value=${speed === undefined ? "" : String(speed)}
+          placeholder="-100..100 or HA template"
+          @input=${(e) => {
+            const raw = e.target.value.trim();
+            if (!raw) {
+                this._updateField("speed", undefined);
+                return;
+            }
+            this._updateField("speed", /^-?\d+$/.test(raw) ? Number(raw) : raw);
+        }}
+        />
+        <small>Integer from -100 to 100, or a Home Assistant template.</small>
+      </div>
     `;
     }
     _renderNameField() {
@@ -2144,6 +2206,9 @@ __decorate([
 __decorate([
     n({ type: Array })
 ], NspEntityEditor.prototype, "hiddenCardKeys", void 0);
+__decorate([
+    n({ type: Boolean })
+], NspEntityEditor.prototype, "allowSpeed", void 0);
 NspEntityEditor = __decorate([
     t$1("nsp-entity-editor")
 ], NspEntityEditor);
@@ -2480,6 +2545,7 @@ let NspCardEditor = class NspCardEditor extends i$1 {
                   .entity=${entity}
                   .includeDomains=${domains}
                   .hiddenCardKeys=${this.hiddenCardKeys}
+                  .allowSpeed=${this.card.type === "cardPower"}
                   @entity-changed=${(e) => { e.stopPropagation(); this._updateEntity(i, e.detail.entity); }}
                 ></nsp-entity-editor>
               ` : ""}
@@ -2609,14 +2675,20 @@ let NspCardEditor = class NspCardEditor extends i$1 {
           <textarea rows="4"
             .value=${card.alarmControl ? JSON.stringify(card.alarmControl, null, 2) : ""}
             placeholder='{"entity": "script.my_alarm_action", "icon": "mdi:alarm-light"}'
+            @input=${(e) => {
+            e.target.setCustomValidity("");
+        }}
             @change=${(e) => {
-            try {
-                const raw = e.target.value.trim();
-                const data = raw ? JSON.parse(raw) : undefined;
-                this._updateField("alarmControl", data && Object.keys(data).length ? data : undefined);
+            const target = e.target;
+            const result = parseOptionalJsonObject(target.value, "alarmControl");
+            target.setCustomValidity(result.error || "");
+            if (result.error) {
+                target.reportValidity();
+                return;
             }
-            catch { /* ignore invalid JSON */ }
+            this._updateField("alarmControl", result.value);
         }}></textarea>
+          <small>Enter a JSON object for the NSPanel alarmControl override.</small>
         </div>
       </details>
     `;
@@ -2725,6 +2797,7 @@ let NspCardList = class NspCardList extends i$1 {
         this._expandedIndex = null;
         this._showAddDialog = false;
         this._dragIndex = null;
+        this._pendingDeleteIndex = null;
     }
     _fireChanged(cards) {
         this.dispatchEvent(new CustomEvent("cards-changed", { detail: { cards }, bubbles: true, composed: true }));
@@ -2736,9 +2809,8 @@ let NspCardList = class NspCardList extends i$1 {
         this._fireChanged(newCards);
     }
     _removeCard(index) {
-        if (!confirm(`Remove ${this.cards[index].type}${this.cards[index].title ? ` "${this.cards[index].title}"` : ""}?`))
-            return;
         const newCards = this.cards.filter((_, i) => i !== index);
+        this._pendingDeleteIndex = null;
         if (this._expandedIndex === index)
             this._expandedIndex = null;
         else if (this._expandedIndex !== null && this._expandedIndex > index)
@@ -2751,6 +2823,7 @@ let NspCardList = class NspCardList extends i$1 {
         const newCards = [...this.cards];
         const [item] = newCards.splice(from, 1);
         newCards.splice(to, 0, item);
+        this._pendingDeleteIndex = null;
         if (this._expandedIndex === from)
             this._expandedIndex = to;
         else if (this._expandedIndex !== null) {
@@ -2803,6 +2876,8 @@ let NspCardList = class NspCardList extends i$1 {
         const isExpanded = this._expandedIndex === index;
         const entityCount = card.entities?.length ?? (card.entity ? 1 : 0);
         const isDragging = this._dragIndex === index;
+        const isDeleting = this._pendingDeleteIndex === index;
+        const deleteLabel = `${card.type}${card.title ? ` "${card.title}"` : ""}`;
         return b `
       <div class="card-item ${isDragging ? "dragging" : ""}"
         draggable="true"
@@ -2827,8 +2902,18 @@ let NspCardList = class NspCardList extends i$1 {
           <span class="card-entities">${entityCount} entit${entityCount === 1 ? "y" : "ies"}</span>
           <span class="spacer"></span>
           <button class="btn-icon expand-btn">${isExpanded ? "▼" : "▶"}</button>
-          <button class="btn-icon delete-btn" @click=${(e) => { e.stopPropagation(); this._removeCard(index); }}>✕</button>
+          <button class="btn-icon delete-btn" @click=${(e) => {
+            e.stopPropagation();
+            this._pendingDeleteIndex = index;
+        }}>✕</button>
         </div>
+        ${isDeleting ? b `
+          <div class="confirm-row">
+            <span>Remove ${deleteLabel}?</span>
+            <button class="btn-danger-sm" @click=${() => this._removeCard(index)}>Delete</button>
+            <button class="btn-sm" @click=${() => { this._pendingDeleteIndex = null; }}>Cancel</button>
+          </div>
+        ` : ""}
         ${isExpanded ? b `
           <div class="card-body">
             <nsp-card-editor
@@ -2887,6 +2972,15 @@ NspCardList.styles = i$4 `
     }
     .type-btn:hover { background: var(--primary-color); color: white; }
     .btn-sm { padding: 4px 12px; border: 1px solid var(--divider-color); border-radius: 4px; background: none; cursor: pointer; font-size: 12px; color: var(--secondary-text-color); }
+    .btn-danger-sm {
+      padding: 4px 12px;
+      border: 1px solid var(--error-color, #db4437);
+      border-radius: 4px;
+      background: var(--error-color, #db4437);
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+    }
     .card-item {
       border: 1px solid var(--divider-color, #e0e0e0);
       border-radius: 8px;
@@ -2912,6 +3006,17 @@ NspCardList.styles = i$4 `
     .spacer { flex: 1; }
     .btn-icon { background: none; border: none; cursor: pointer; padding: 4px 8px; font-size: 14px; color: var(--secondary-text-color); }
     .delete-btn:hover { color: var(--error-color, #db4437); }
+    .confirm-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--secondary-background-color, #fff3e0);
+      border-top: 1px solid var(--divider-color, #e0e0e0);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .confirm-row span { flex: 1; }
     .card-body { padding: 16px; border-top: 1px solid var(--divider-color, #e0e0e0); }
     .empty { text-align: center; color: var(--secondary-text-color); font-size: 14px; padding: 24px; }
   `;
@@ -2936,6 +3041,9 @@ __decorate([
 __decorate([
     r()
 ], NspCardList.prototype, "_dragIndex", void 0);
+__decorate([
+    r()
+], NspCardList.prototype, "_pendingDeleteIndex", void 0);
 NspCardList = __decorate([
     t$1("nsp-card-list")
 ], NspCardList);
@@ -3007,6 +3115,8 @@ function colorizeValue(value) {
 let NspYamlPreview = class NspYamlPreview extends i$1 {
     constructor() {
         super(...arguments);
+        this.panelId = "";
+        this.disableExport = false;
         this._yaml = "";
         this._loading = true;
         this._error = null;
@@ -3022,13 +3132,28 @@ let NspYamlPreview = class NspYamlPreview extends i$1 {
         this._loading = true;
         this._error = null;
         try {
-            const result = await this.hass.callWS({ type: "nspanel_editor/preview_yaml" });
+            const result = await this.hass.callWS(this._buildPreviewRequest());
             this._yaml = result.yaml || "";
         }
         catch (err) {
             this._error = err.message || "Failed to load YAML preview";
         }
         this._loading = false;
+    }
+    _buildPreviewRequest() {
+        if (this.panelId && this.panelData) {
+            return {
+                type: "nspanel_editor/preview_yaml",
+                panel_id: this.panelId,
+                panel: {
+                    config: this.panelData.config,
+                    cards: this.panelData.cards,
+                    hiddenCards: this.panelData.hiddenCards,
+                    screensaver: this.panelData.screensaver,
+                },
+            };
+        }
+        return { type: "nspanel_editor/preview_yaml" };
     }
     async _copyToClipboard() {
         try {
@@ -3087,10 +3212,17 @@ let NspYamlPreview = class NspYamlPreview extends i$1 {
           <button class="btn btn-primary" @click=${this._copyToClipboard}>
             ${this._copied ? "Copied!" : "Copy to Clipboard"}
           </button>
-          <button class="btn btn-export" ?disabled=${this._exporting} @click=${this._exportToFile}>
+          <button class="btn btn-export" ?disabled=${this._exporting || this.disableExport} @click=${this._exportToFile}>
             ${this._exporting ? "Exporting..." : "Export to apps.yaml"}
           </button>
         </div>
+        ${this.disableExport
+            ? b `
+              <div class="info-banner">
+                This preview includes unsaved panel changes. Save the panel before exporting to <code>apps.yaml</code>.
+              </div>
+            `
+            : ""}
         ${this._exportStatus
             ? b `
               <div class="status-banner ${this._exportStatus.type}">
@@ -3145,6 +3277,17 @@ NspYamlPreview.styles = i$4 `
       background: var(--error-color, #db4437);
       color: white;
     }
+    .info-banner {
+      background: var(--warning-color, #ffa726);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .info-banner code {
+      font-family: "Fira Code", "Consolas", monospace;
+      color: inherit;
+    }
     .status-banner .dismiss {
       background: none;
       border: none;
@@ -3196,6 +3339,15 @@ NspYamlPreview.styles = i$4 `
 __decorate([
     n({ attribute: false })
 ], NspYamlPreview.prototype, "hass", void 0);
+__decorate([
+    n({ type: String })
+], NspYamlPreview.prototype, "panelId", void 0);
+__decorate([
+    n({ attribute: false })
+], NspYamlPreview.prototype, "panelData", void 0);
+__decorate([
+    n({ type: Boolean })
+], NspYamlPreview.prototype, "disableExport", void 0);
 __decorate([
     r()
 ], NspYamlPreview.prototype, "_yaml", void 0);
@@ -4631,7 +4783,12 @@ let NspPanelEditor = class NspPanelEditor extends i$1 {
         `;
             case "yaml":
                 return b `
-          <nsp-yaml-preview .hass=${this.hass}></nsp-yaml-preview>
+          <nsp-yaml-preview
+            .hass=${this.hass}
+            .panelId=${this.panelId}
+            .panelData=${this._data}
+            .disableExport=${this._dirty}
+          ></nsp-yaml-preview>
         `;
         }
     }

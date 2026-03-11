@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, CardConfig, EntityConfig, CardType } from "../models/types";
 import { getEntityDomainsForCard, createDefaultEntity } from "../models/types";
+import { parseOptionalJsonObject } from "../utils/json-field";
 import "./entity-editor";
 import "./nsp-entity-picker";
 import "./nsp-mode-picker";
@@ -13,6 +14,7 @@ export class NspCardEditor extends LitElement {
   @property({ type: Array }) public hiddenCardKeys: string[] = [];
 
   @state() private _expandedEntity: number | null = null;
+
   private _fireChanged(updated: CardConfig) {
     this.dispatchEvent(
       new CustomEvent("card-changed", { detail: { card: updated }, bubbles: true, composed: true })
@@ -134,6 +136,7 @@ export class NspCardEditor extends LitElement {
                   .entity=${entity}
                   .includeDomains=${domains}
                   .hiddenCardKeys=${this.hiddenCardKeys}
+                  .allowSpeed=${this.card.type === "cardPower"}
                   @entity-changed=${(e: CustomEvent) => { e.stopPropagation(); this._updateEntity(i, e.detail.entity); }}
                 ></nsp-entity-editor>
               ` : ""}
@@ -268,13 +271,20 @@ export class NspCardEditor extends LitElement {
           <textarea rows="4"
             .value=${card.alarmControl ? JSON.stringify(card.alarmControl, null, 2) : ""}
             placeholder='{"entity": "script.my_alarm_action", "icon": "mdi:alarm-light"}'
+            @input=${(e: Event) => {
+              (e.target as HTMLTextAreaElement).setCustomValidity("");
+            }}
             @change=${(e: Event) => {
-              try {
-                const raw = (e.target as HTMLTextAreaElement).value.trim();
-                const data = raw ? JSON.parse(raw) : undefined;
-                this._updateField("alarmControl", data && Object.keys(data).length ? data : undefined);
-              } catch { /* ignore invalid JSON */ }
+              const target = e.target as HTMLTextAreaElement;
+              const result = parseOptionalJsonObject(target.value, "alarmControl");
+              target.setCustomValidity(result.error || "");
+              if (result.error) {
+                target.reportValidity();
+                return;
+              }
+              this._updateField("alarmControl", result.value);
             }}></textarea>
+          <small>Enter a JSON object for the NSPanel alarmControl override.</small>
         </div>
       </details>
     `;

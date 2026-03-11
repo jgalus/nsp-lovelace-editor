@@ -8,27 +8,19 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
-from .const import CONF_APPDAEMON_PATH, DEFAULT_APPDAEMON_PATH, DOMAIN, LOGGER, APPDAEMON_PATH_CANDIDATES
-
-# Allowed parent directories for the AppDaemon config path
-_ALLOWED_PATH_PREFIXES = (
-    "/config/",
-    "/addon_configs/",
-    "/homeassistant/",
-    "/share/",
+from .const import (
+    APPDAEMON_PATH_CANDIDATES,
+    CONF_APPDAEMON_PATH,
+    DEFAULT_APPDAEMON_PATH,
+    DOMAIN,
+    LOGGER,
 )
+from .path_utils import is_allowed_path
 
 
 def _is_safe_appdaemon_path(path_str: str) -> bool:
     """Check that a path resolves within allowed directories."""
-    try:
-        resolved = Path(path_str).resolve()
-    except (OSError, ValueError):
-        return False
-    return any(
-        str(resolved).startswith(prefix.rstrip("/"))
-        for prefix in _ALLOWED_PATH_PREFIXES
-    )
+    return is_allowed_path(path_str)
 
 
 class NsPanelLovelaceEditorConfigFlow(ConfigFlow, domain=DOMAIN):
